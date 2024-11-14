@@ -5,18 +5,48 @@ library(plotly)
 library(ggplot2)
 library(ggbeeswarm)
 
-# define the drawing moudle UI
+# 定义绘图模块的 UI 函数
 plotModuleUI <- function(id) {
-  ns <- NS(id)
-  plotlyOutput(ns("plot"), height = 400)
+  ns <- NS(id)  # 创建命名空间
+  tagList(
+    uiOutput(ns("distr_title")),
+    plotlyOutput(ns("plot"), height = 400)
+  )
 }
 
-# 定义绘图模块的服务器逻辑define the service logic for the drawing moudle
-plotModule <- function(input, output, session, data, fill_var, additional_params = list()) {
-  output$plot <- renderPlotly({
-    # 使用传入的数据和填充变量绘制分布图
-    plot_bee_distr(fill_var, data, additional_params)
+# 定义绘图模块的服务器函数
+plotModule <- function(input, output, session, fill, st, mwi, idx, ol, is_all, hl, zcta_hl) {
+  ns <- session$ns  # 获取命名空间
+
+  # 渲染分布图标题
+  output$distr_title <- renderUI({
+    HTML(paste0(
+      "<b><center><font size = '3'>",
+      "Distribution of ", ol$measure_to_names[[idx]][fill],
+      " for ",
+      ifelse(idx != "black", "the ", ""),
+      ifelse(idx == "black", "Black ", "Overall "),
+      "Population",
+      ifelse(idx == "black", "s", ""),
+      " in ",
+      st,
+      "</b></center></font>"
+    ))
   })
 
-  # 其他绘图相关的反应逻辑可以在这里添加
+  # 渲染分布图
+  output$plot <- renderPlotly({
+    withProgress(message = "Rendering data distribution", {
+      plot_bee_distr(
+        fill = fill,
+        st = st,
+        mwi = mwi,
+        idx = idx,
+        ol = ol,
+        is_all = is_all,
+        hl = hl,
+        zcta_hl = zcta_hl
+      )
+    })
+  })
 }
