@@ -1,9 +1,9 @@
 # Main Data Processing Pipeline File
 # By HSE Team
 # Originated on: 6/28/21
+# Last updated: 11/16/24
 
 # load libraries and overarching data ----
-
 library(readxl)
 
 # folder where all the data and information for the pipeline is
@@ -15,10 +15,39 @@ preprocessed_folder <- file.path(data_folder, "Preprocessed")
 # folder where all the cleaned/output data goes
 cleaned_folder <- file.path(data_folder, "Cleaned")
 
-# load measure registry -- first sheet
-m_reg <- as.data.frame(
-  read_excel(file.path(data_folder, "Metadata.xlsx"), sheet = 1)
-)
+#' Validate measure registry data
+#' @param m_reg Measure registry dataframe
+#' @return TRUE if valid, error if invalid
+validate_measure_registry <- function(m_reg) {
+  required_cols <- c("Numerator", "Denominator", "Weights", "Geographic Level",
+                    "Race Stratification", "Is Preprocessed", "Scale", "Directionality")
+  
+  missing_cols <- setdiff(required_cols, colnames(m_reg))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns in measure registry: ", 
+         paste(missing_cols, collapse = ", "))
+  }
+  
+  if (!is.numeric(m_reg$Weights)) {
+    stop("Weights column must be numeric")
+  }
+  if (!is.numeric(m_reg$Scale)) {
+    stop("Scale column must be numeric")
+  }
+  
+  return(TRUE)
+}
+
+# load measure registry -- first sheet and validate
+tryCatch({
+  m_reg <- as.data.frame(
+    read_excel(file.path(data_folder, "Metadata.xlsx"), sheet = 1)
+  )
+  validate_measure_registry(m_reg)
+}, error = function(e) {
+  stop("Error loading measure registry: ", e$message)
+})
+
 # remove everything that doesn't have a numerator
 m_reg <- m_reg[!is.na(m_reg$Numerator),]
 
@@ -31,14 +60,19 @@ source(file.path("Processing_Pipeline", "crosswalk_func.R"))
 source(file.path("Processing_Pipeline", "relationship_func.R"))
 
 # load population totals
-all_pop_df <- read.csv(
-  file.path(data_folder, "Resources", "ACS_ZCTA_Total_Populations.csv"),
-  colClasses = c("GEOID" = "character")
-)
+tryCatch({
+  all_pop_df <- read.csv(
+    file.path(data_folder, "Resources", "ACS_ZCTA_Total_Populations.csv"),
+    colClasses = c("GEOID" = "character")
+  )
+}, error = function(e) {
+  stop("Error loading population data: ", e$message)
+})
 
 # note -- we ignore missing data when doing ranking
 # function to compute percentile ranking
 perc.rank <- function(x) {
+  if (all(is.na(x))) return(x)
   return(rank(x, na.last = "keep")/length(x[!is.na(x)])*100)
 }
 
@@ -47,6 +81,10 @@ perc.rank <- function(x) {
 # type: "pop" or "black" is it full population or race stratified
 # returns final score, combined with weights
 get_final_score <- function(pm, type = "pop", info_dat = info_dat){
+  if (!type %in% c("pop", "black")) {
+    stop("type must be either 'pop' or 'black'")
+  }
+  
   # now created the weighted measures
   # first multiply the original weights
   tot_weighted_meas <- sweep(
@@ -63,7 +101,6 @@ get_final_score <- function(pm, type = "pop", info_dat = info_dat){
   wt_df <- rbind(wt_df, wt_df[rep(1, nrow(tot_weighted_meas)-1),])
   wt_df[is.na(tot_weighted_meas)] <- NA
   wt_sum <- rowSums(wt_df, na.rm = T)
-  # NOTE: we want to return this scaled in the future
   
   # create the appropriately weighted measures
   weighted_meas <- sweep(
@@ -75,11 +112,10 @@ get_final_score <- function(pm, type = "pop", info_dat = info_dat){
   # preliminary score is weighted limited score
   prelim_score <- rowSums(weighted_meas, na.rm = T)
   # remove score for places under some threshold
-  # NOTE: now, the place has to have at least 1 person
   prelim_score[
     pm$GEOID %in% 
       all_pop_df$GEOID[all_pop_df[,paste0("total_", type)] < 1]
-    ] <- NA
+  ] <- NA
   # remove score for places with over 50% of weights missing 
   prelim_score[wt_sum < 50] <- NA
   
@@ -96,7 +132,6 @@ get_final_score <- function(pm, type = "pop", info_dat = info_dat){
 }
 
 # allocate overarching variables ----
-
 geo_levels <- c(
   "ZCTA",
   "County",
@@ -105,14 +140,8 @@ geo_levels <- c(
 )
 
 # pipeline function ----
-
-# inputs:
-#  m_reg_custom: metadata file
-#  custom_data: list of dataframes of custom data
-#  run_custom: are we adding custom data?
-#  z_enter: list of ZCTAs to subset to, if running custom
 mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(), 
-                         run_custom = F, z_enter = c()){
+                        run_custom = F, z_enter = c()){
   
   # saving for the overall output
   overall_out <- list()
@@ -146,97 +175,98 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
       
       comb_df <- data.frame()
       for (fn in unique(m_reg_sub$Filename)){
-        # correct geoid column 
-        geoid_colname <- m_reg_sub$`GEOID Column`[m_reg_sub$Filename == fn][1]
-        
-        # read in data 
-        if (!fn %in% names(custom_data)){
-          curr_df <- read.csv(file.path(preprocessed_folder, fn),
-                              colClasses = setNames(
-                                "character",
-                                geoid_colname
-                              ))
-        } else {
-          curr_df <- custom_data[[fn]]
-        }
-        
-        curr_df <- check_geoid(curr_df, geoid_colname, type = gl)
-        
-        # getting columns that need to be converted 
-        # (numerators and denominators)
-        var_df <- rbind(m_reg_sub, m_reg_sub[m_reg_sub$`Race Stratification`,])
-        
-        is_preprocessed <- var_df$`Is Preprocessed`
-        not_dup_num <- !duplicated(var_df$Numerator)
-        not_dup_den <- !duplicated(var_df$Denominator) & !is.na(var_df$Denominator)
-        var_df$Numerator[is_preprocessed & not_dup_num] <-
-          paste0(var_df$Numerator[is_preprocessed & not_dup_num], "_pop")
-        var_df$Denominator[is_preprocessed & not_dup_den] <-
-          paste0(var_df$Denominator[is_preprocessed & not_dup_den], "_pop")
-        
-        # add black for ones that are preprocessed and are not pop
-        not_pop_num <- !grepl("_pop", var_df$Numerator)
-        not_pop_den <- !grepl("_pop", var_df$Denominator) & 
-          !is.na(var_df$Denominator)
-        var_df$Numerator[is_preprocessed & not_pop_num] <-
-          paste0(var_df$Numerator[is_preprocessed & not_pop_num], "_black")
-        var_df$Denominator[is_preprocessed & not_pop_den] <-
-          paste0(var_df$Denominator[is_preprocessed & not_pop_den], "_black")
-        
-        meas_col <- c(var_df$Numerator, var_df$Denominator)
-        meas_col <- meas_col[!is.na(meas_col)]
-        meas_col <- meas_col[meas_col %in% colnames(curr_df)]
-        
-        # get rid of duplicate GEOID rows by averaging -- no GEOIDs should be
-        # duplicated
-        if (any(duplicated(curr_df[, geoid_colname]))){
-          dup_vals <- curr_df[, geoid_colname] %in% 
-            curr_df[, geoid_colname][duplicated(curr_df[, geoid_colname])]
+        tryCatch({
+          # correct geoid column 
+          geoid_colname <- m_reg_sub$`GEOID Column`[m_reg_sub$Filename == fn][1]
           
-          tmp <- aggregate(curr_df[dup_vals, meas_col], 
+          # read in data 
+          if (!fn %in% names(custom_data)){
+            curr_df <- read.csv(file.path(preprocessed_folder, fn),
+                              colClasses = setNames("character", geoid_colname))
+          } else {
+            curr_df <- custom_data[[fn]]
+          }
+          
+          curr_df <- check_geoid(curr_df, geoid_colname, type = gl)
+          
+          # getting columns that need to be converted 
+          # (numerators and denominators)
+          var_df <- rbind(m_reg_sub, m_reg_sub[m_reg_sub$`Race Stratification`,])
+          
+          is_preprocessed <- var_df$`Is Preprocessed`
+          not_dup_num <- !duplicated(var_df$Numerator)
+          not_dup_den <- !duplicated(var_df$Denominator) & !is.na(var_df$Denominator)
+          var_df$Numerator[is_preprocessed & not_dup_num] <-
+            paste0(var_df$Numerator[is_preprocessed & not_dup_num], "_pop")
+          var_df$Denominator[is_preprocessed & not_dup_den] <-
+            paste0(var_df$Denominator[is_preprocessed & not_dup_den], "_pop")
+          
+          # add black for ones that are preprocessed and are not pop
+          not_pop_num <- !grepl("_pop", var_df$Numerator)
+          not_pop_den <- !grepl("_pop", var_df$Denominator) & 
+            !is.na(var_df$Denominator)
+          var_df$Numerator[is_preprocessed & not_pop_num] <-
+            paste0(var_df$Numerator[is_preprocessed & not_pop_num], "_black")
+          var_df$Denominator[is_preprocessed & not_pop_den] <-
+            paste0(var_df$Denominator[is_preprocessed & not_pop_den], "_black")
+          
+          meas_col <- c(var_df$Numerator, var_df$Denominator)
+          meas_col <- meas_col[!is.na(meas_col)]
+          meas_col <- meas_col[meas_col %in% colnames(curr_df)]
+          
+          # get rid of duplicate GEOID rows by averaging -- no GEOIDs should be
+          # duplicated
+          if (any(duplicated(curr_df[, geoid_colname]))){
+            dup_vals <- curr_df[, geoid_colname] %in% 
+              curr_df[, geoid_colname][duplicated(curr_df[, geoid_colname])]
+            
+            tmp <- aggregate(curr_df[dup_vals, meas_col], 
                            by = list("GEOID" = curr_df[, geoid_colname][dup_vals]),
                            FUN = mean, na.rm = T)
-          colnames(tmp)[-1] <- meas_col
-          
-          curr_df <- curr_df[!duplicated(curr_df[, geoid_colname]),]
-          rownames(curr_df) <- curr_df[, geoid_colname]
-          curr_df[tmp$GEOID, meas_col] <- tmp[, meas_col]
-        }
-        
-        # first, map from 2010 to 2020 if needed
-        # applies to census tracts and ZCTAs -- counties have no change, zip
-        # codes are only converted once converted to ZCTAs
-        if (m_reg_sub$`Geographic Boundaries`[m_reg_sub$Filename == fn][1] ==
-             2010){
-          
-          if (gl == "Census Tract"){
+            colnames(tmp)[-1] <- meas_col
             
-            curr_df <- ct_10_to_20(curr_df, 
-                                   geoid_colname,
-                                   meas_col)
-          } else if (gl == "ZCTA"){
-            curr_df <- zcta_10_to_20(curr_df, 
-                                     geoid_colname,
-                                     meas_col)
+            curr_df <- curr_df[!duplicated(curr_df[, geoid_colname]),]
+            rownames(curr_df) <- curr_df[, geoid_colname]
+            curr_df[tmp$GEOID, meas_col] <- tmp[, meas_col]
           }
-        }
-        
-        # collate data
-        if (nrow(comb_df) == 0){
-          # add our data
-          comb_df <- rbind(comb_df, curr_df)
-          # rename geoid column
-          colnames(comb_df)[colnames(comb_df) == geoid_colname] <- "GEOID"
-          # add as rownames
-          rownames(comb_df) <- as.character(comb_df$GEOID)
-        } else { # add data to existing
-          comb_df[as.character(curr_df[,geoid_colname]), 
-                  colnames(curr_df)[colnames(curr_df) != geoid_colname]] <-
-            curr_df[,colnames(curr_df)[colnames(curr_df) != geoid_colname]]
           
-          # update geoid and rownames
-          comb_df$GEOID <- as.character(rownames(comb_df))
-        }
+          # first, map from 2010 to 2020 if needed
+          # applies to census tracts and ZCTAs -- counties have no change, zip
+          # codes are only converted once converted to ZCTAs
+          if (m_reg_sub$`Geographic Boundaries`[m_reg_sub$Filename == fn][1] ==
+              2010){
+            
+            if (gl == "Census Tract"){
+              
+              curr_df <- ct_10_to_20(curr_df, 
+                                    geoid_colname,
+                                    meas_col)
+            } else if (gl == "ZCTA"){
+              curr_df <- zcta_10_to_20(curr_df, 
+                                      geoid_colname,
+                                      meas_col)
+            }
+          }
+          
+          # collate data
+          if (nrow(comb_df) == 0){
+            # add our data
+            comb_df <- rbind(comb_df, curr_df)
+            # rename geoid column
+            colnames(comb_df)[colnames(comb_df) == geoid_colname] <- "GEOID"
+            # add as rownames
+            rownames(comb_df) <- as.character(comb_df$GEOID)
+          } else { # add data to existing
+            comb_df[as.character(curr_df[,geoid_colname]), 
+                   colnames(curr_df)[colnames(curr_df) != geoid_colname]] <-
+              curr_df[,colnames(curr_df)[colnames(curr_df) != geoid_colname]]
+            
+            # update geoid and rownames
+            comb_df$GEOID <- as.character(rownames(comb_df))
+          }
+        }, error = function(e) {
+          stop("Error processing file ", fn, ": ", e$message)
+        })
       }
       
       # add to full list
@@ -245,9 +275,6 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
   }
   
   # get/output variable information ----
-  
-  # TODO: ADD TRYCATCH/DATA QUALITY FILTERING
-  
   cat(paste0("[", Sys.time(), "]: Calculating data information\n"))
   
   # preallocate output data -- this will also be useful later
@@ -303,13 +330,11 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
         info_dat$Effective_Weights[cn_log]/
         sum(info_dat$Effective_Weights[cn_log])*wt_amt[cn]
     }
-  } else {
-    # we don't impose categories on given data, just rescale to 100
+  } else {# we don't impose categories on given data, just rescale to 100
     info_dat$Effective_Weights <- 
       info_dat$Effective_Weights/
       sum(info_dat$Effective_Weights)*100
   }
-  
   
   # duplicate rows that are race stratified
   info_dat <- rbind(info_dat, info_dat[m_reg$`Race Stratification`,])
@@ -332,7 +357,6 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
     paste0(info_dat$Denominator[is_preprocessed & not_pop_den], "_black")
   
   rownames(info_dat) <- info_dat$Numerator
-  
   
   if (!upd_weights){
     # where we're going to put all the data
@@ -362,18 +386,23 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
         for (num in info_dat_sub$Numerator){
           cat(paste0("Statistics for ", num, ":\n"))
           for (cn in c("Is_Numeric", "Minimum", "Maximum", "Missing" , 
-                       "Number_Rows")){
+                      "Number_Rows")){
             cat(paste0("\t", gsub("_", " ", cn),":", 
-                       info_dat[num, cn]), "\n")
+                      info_dat[num, cn]), "\n")
           }
         }
       }
     }
   } else {
     # we will fill in this info from the original
-    info_orig <- read.csv(file.path(cleaned_folder,
-                                    "HSE_MWI_Data_Information.csv"),
-                          check.names = F)
+    info_orig <- tryCatch({
+      read.csv(file.path(cleaned_folder,
+                        "HSE_MWI_Data_Information.csv"),
+               check.names = F)
+    }, error = function(e) {
+      stop("Error loading original info data: ", e$message)
+    })
+    
     rownames(info_orig) <- info_orig$Numerator
     
     cn <- c("Is_Numeric", 
@@ -382,7 +411,6 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
             "Missing", 
             "Number_Rows")
     info_dat[, cn] <- info_orig[info_dat$Numerator, cn]
-    
   }
   
   # write out data information
@@ -392,11 +420,15 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
   if (run_custom){
     overall_out[["info_dat"]] <- info_dat
   } else {
-    write.csv(info_dat, 
-              file.path(cleaned_folder,
-                        "HSE_MWI_Data_Information.csv"),
-              na = "",
-              row.names = F)
+    tryCatch({
+      write.csv(info_dat, 
+                file.path(cleaned_folder,
+                         "HSE_MWI_Data_Information.csv"),
+                na = "",
+                row.names = F)
+    }, error = function(e) {
+      warning("Error writing info data: ", e$message)
+    })
   }
   
   # convert data to zcta ----
@@ -411,7 +443,7 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
           "GEOID",
           info_dat$Numerator[info_dat$`Geographic Level` == "ZCTA"],
           info_dat$Denominator[!is.na(info_dat$Denominator) &
-                                 info_dat$`Geographic Level` == "ZCTA"]
+                                info_dat$`Geographic Level` == "ZCTA"]
         )
         ]
       } else {
@@ -505,9 +537,6 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
   if (!upd_weights){
     cat(paste0("[", Sys.time(), "]: Combining and scaling measures\n"))
     
-    # TODO: CLEAN UP ENVIRONMENT
-    # TODO: ADD CHECKS
-    
     # first, allocate with only numerators
     meas_df <- zcta_df[, !colnames(zcta_df) %in% info_dat$Denominator]
     
@@ -537,11 +566,15 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
     if (run_custom){
       overall_out[["meas_df"]] <- meas_df
     } else {
-      write.csv(meas_df, 
-                file.path(cleaned_folder,
-                          "HSE_MWI_ZCTA_Converted_Measures.csv"),
-                na = "",
-                row.names = F)
+      tryCatch({
+        write.csv(meas_df, 
+                  file.path(cleaned_folder,
+                           "HSE_MWI_ZCTA_Converted_Measures.csv"),
+                  na = "",
+                  row.names = F)
+      }, error = function(e) {
+        warning("Error writing measures data: ", e$message)
+      })
     }
   }
   
@@ -550,12 +583,16 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
   # percentile rank/scale depending on if there are zctas we want to subset to
   if (upd_weights){
     # if it's custom, we need to save all in the overall output vector
-    meas_df <- read.csv(file.path(cleaned_folder,
-                                  "HSE_MWI_ZCTA_Converted_Measures.csv"),
-                        check.names = F,
-                        colClasses = c(
-                          "GEOID" = "character"
-                        ))
+    meas_df <- tryCatch({
+      read.csv(file.path(cleaned_folder,
+                        "HSE_MWI_ZCTA_Converted_Measures.csv"),
+               check.names = F,
+               colClasses = c(
+                 "GEOID" = "character"
+               ))
+    }, error = function(e) {
+      stop("Error loading converted measures: ", e$message)
+    })
     
     if (length(z_enter) > 0){
       meas_df <- meas_df[meas_df$GEOID %in% unname(z_enter),]
@@ -596,44 +633,55 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
     if (run_custom){
       no_dir_perc_meas_df <- 
         no_dir_perc_meas_df[no_dir_perc_meas_df$GEOID != "",]
-      rownames(no_dir_perc_meas_df) <- no_dir_perc_meas_df$GEOID
+      rownames(rownames(no_dir_perc_meas_df) <- no_dir_perc_meas_df$GEOID
       colnames(no_dir_perc_meas_df)[colnames(no_dir_perc_meas_df) == "GEOID"] <- "ZCTA"
       
       overall_out[["perc_meas_df"]] <- perc_meas_df
       overall_out[["no_dir_perc_meas_df"]] <- no_dir_perc_meas_df
     } else {
-      write.csv(perc_meas_df, 
-                file.path(cleaned_folder,
-                          "HSE_MWI_ZCTA_Percentile_Ranked_Measures.csv"),
-                na = "",
-                row.names = F)
-      
-      write.csv(no_dir_perc_meas_df, 
-                file.path(cleaned_folder,
-                          "HSE_MWI_ZCTA_No_Directionality_Percentile_Ranked_Measures.csv"),
-                na = "",
-                row.names = F)
+      tryCatch({
+        write.csv(perc_meas_df, 
+                  file.path(cleaned_folder,
+                           "HSE_MWI_ZCTA_Percentile_Ranked_Measures.csv"),
+                  na = "",
+                  row.names = F)
+        
+        write.csv(no_dir_perc_meas_df, 
+                  file.path(cleaned_folder,
+                           "HSE_MWI_ZCTA_No_Directionality_Percentile_Ranked_Measures.csv"),
+                  na = "",
+                  row.names = F)
+      }, error = function(e) {
+        warning("Error writing percentile ranked data: ", e$message)
+      })
     }
   } else {
     # if we're just changing the weights, we can just read the processed data 
     # here
-    perc_meas_df <- read.csv(
-      file.path(cleaned_folder,
-                "HSE_MWI_ZCTA_Percentile_Ranked_Measures.csv"),
-      check.names = F,
-      colClasses = c(
-        "GEOID" = "character"
+    perc_meas_df <- tryCatch({
+      read.csv(
+        file.path(cleaned_folder,
+                  "HSE_MWI_ZCTA_Percentile_Ranked_Measures.csv"),
+        check.names = F,
+        colClasses = c(
+          "GEOID" = "character"
+        )
       )
-    )
+    }, error = function(e) {
+      stop("Error loading percentile ranked measures: ", e$message)
+    })
     
-    no_dir_perc_meas_df <- read.csv(
-      file.path(cleaned_folder,
-                "HSE_MWI_ZCTA_No_Directionality_Percentile_Ranked_Measures.csv"),
-      check.names = F,
-      colClasses = c(
-        "GEOID" = "character"
-      ))
-    
+    no_dir_perc_meas_df <- tryCatch({
+      read.csv(
+        file.path(cleaned_folder,
+                  "HSE_MWI_ZCTA_No_Directionality_Percentile_Ranked_Measures.csv"),
+        check.names = F,
+        colClasses = c(
+          "GEOID" = "character"
+        ))
+    }, error = function(e) {
+      stop("Error loading no directionality percentile ranked measures: ", e$message)
+    })
     
     if (run_custom){
       no_dir_perc_meas_df <- 
@@ -662,8 +710,12 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
                    info_dat$Numerator[!info_dat$`Race Stratification`]]
   
   # get final, scaled scores
-  pop_pm$Mental_Wellness_Index  <- get_final_score(pop_pm, type = "pop", info_dat = info_dat)
-  black_pm$Mental_Wellness_Index  <- get_final_score(black_pm, type = "black", info_dat = info_dat)
+  tryCatch({
+    pop_pm$Mental_Wellness_Index <- get_final_score(pop_pm, type = "pop", info_dat = info_dat)
+    black_pm$Mental_Wellness_Index <- get_final_score(black_pm, type = "black", info_dat = info_dat)
+  }, error = function(e) {
+    stop("Error calculating final scores: ", e$message)
+  })
   
   # reorder columns, for ease of reading
   pop_pm <- pop_pm[,c(
@@ -682,17 +734,26 @@ mwi_pipeline <- function(m_reg_custom = m_reg, custom_data = list(),
     overall_out[["pop_pm"]] <- pop_pm
     overall_out[["black_pm"]] <- black_pm
   } else {
-    write.csv(pop_pm, 
-              file.path(cleaned_folder,
-                        "HSE_MWI_ZCTA_Mental_Wellness_Index_Population.csv"),
-              na = "",
-              row.names = F)
-    
-    write.csv(black_pm, 
-              file.path(cleaned_folder,
-                        "HSE_MWI_ZCTA_Mental_Wellness_Index_Black.csv"),
-              na = "",
-              row.names = F)
+    tryCatch({
+      write.csv(pop_pm, 
+                file.path(cleaned_folder,
+                          "HSE_MWI_ZCTA_Mental_Wellness_Index_Population.csv"),
+                na = "",
+                row.names = F)
+      
+      write.csv(black_pm, 
+                file.path(cleaned_folder,
+                          "HSE_MWI_ZCTA_Mental_Wellness_Index_Black.csv"),
+                na = "",
+                row.names = F)
+    }, error = function(e) {
+      warning("Error writing final indices: ", e$message)
+    })
+  }
+  
+  # Clean up global environment before returning
+  if (exists("cleanup_environment")) {
+    cleanup_environment(keep = c("overall_out", "m_reg", "all_pop_df"))
   }
   
   return(overall_out)
