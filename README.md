@@ -57,7 +57,7 @@ To create your own Mental Wellness Index, you can follow the rest of the instruc
 4. In the unzipped folder, open "app.R" in RStudio. This should open RStudio and the "app.R" script in the top left hand corner of the application.
 
 5. In the console window, which is in the bottom left hand corner, enter the following line and answer "yes" to all prompts in the console as you install these packages:
-   * install.packages(c('readxl', 'writexl', 'htmltools', 'shiny', 'tigris', 'leaflet', 'RColorBrewer', 'sf', 'plotly', 'ggbeeswarm', 'shinyWidgets', 'sass', 'shinycssloaders', 'shinyBS', 'DT', 'dplyr'))
+   * install.packages(c('readxl', 'writexl', 'htmltools', 'shiny', 'shinyjs', 'tigris', 'leaflet', 'RColorBrewer', 'sf', 'plotly', 'ggbeeswarm', 'shinyWidgets', 'sass', 'shinycssloaders', 'shinyBS', 'DT', 'dplyr'))
 
 6. In the top right hand corner of the "app.R" window, you should see "Run App". Click the small downward arrow to the right of that and click "Run External". Then click "Run App".
 
