@@ -1,0 +1,47 @@
+app_preprocess()
+
+Purpose: Prepares and processes data for the application.
+Called by: server function during initialization.
+
+2. plot_map()
+
+Purpose: Generates a Leaflet map visualization.
+Called by: Reactive expression within the server function.
+
+3. plot_bee_distr()
+
+Purpose: Creates a bee swarm distribution plot using Plotly.
+Called by: Reactive expression within the server function.
+
+4. ui
+
+Purpose: Defines the user interface layout and elements.
+Components:
+fluidPage(): Creates a fluid page layout.
+titlePanel(): Displays the application title.
+sidebarLayout(): Structures the main page with a sidebar.
+sidebarPanel(): Contains input controls.
+mainPanel(): Displays outputs like plots and maps.
+
+5. server
+
+Purpose: Defines server-side logic and reactive expressions.
+Components:
+reactive({}): Creates reactive expressions for dynamic data.
+observeEvent(): Monitors and responds to user inputs.
+Render Functions:
+renderLeaflet(): Renders the Leaflet map output.
+renderPlotly(): Renders the Plotly distribution plot.
+
+6. shinyApp(ui, server)
+
+Purpose: Combines the UI and server components to create the Shiny application.
+
+
+
+Eg.
+Nodes represent the functions and UI components.
+Edges represent calls or dependencies between the functions.
+UI components are broken down into fluidPage, titlePanel, sidebarLayout, sidebarPanel, and mainPanel.
+The server calls reactive expressions and render functions (renderLeaflet and renderPlotly).
+Reactive expressions call plot_map and plot_bee_distr.
