@@ -722,23 +722,6 @@ ui <- fluidPage(
   # This is necessary because the navbarPage title is html and not straight text
   useShinyjs(),
 
-  tags$script(
-  '
-    // Function to check and set session storage for "seen"
-    Shiny.addCustomMessageHandler("checkSessionStorage", function(message) {
-      console.log("Checking sessionStorage...");
-      if (!sessionStorage.getItem("seen")) {
-        console.log("No seen item in sessionStorage. Showing modal.");
-        Shiny.setInputValue("show_modal", true, {priority: "event"});
-        sessionStorage.setItem("seen", "true"); // Set sessionStorage item
-      } else {
-        console.log("Seen item found in sessionStorage. Modal will not be shown.");
-        Shiny.setInputValue("show_modal", false, {priority: "event"});
-      }
-    });
-    '
-  ),
-
   div(
     titlePanel(
       title="", 
@@ -766,6 +749,23 @@ ui <- fluidPage(
         )
       },
     theme="stylesheets/app.css",
+
+  tags$script(
+  '
+    // Function to check and set session storage for "seen"
+    Shiny.addCustomMessageHandler("checkSessionStorage", function(message) {
+      console.log("Checking sessionStorage...");
+      if (!sessionStorage.getItem("seen")) {
+        console.log("No seen item in sessionStorage. Showing modal.");
+        Shiny.setInputValue("show_modal", true, {priority: "event"});
+        sessionStorage.setItem("seen", "true"); // Set sessionStorage item
+      } else {
+        console.log("Seen item found in sessionStorage. Modal will not be shown.");
+        Shiny.setInputValue("show_modal", false, {priority: "event"});
+      }
+    });
+    '
+  ),
     
     # explore states ----
     tabPanel(
