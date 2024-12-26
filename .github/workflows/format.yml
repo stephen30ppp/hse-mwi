@@ -29,8 +29,7 @@ jobs:
           
       - name: Install R tools
         run: |
-          install.packages('styler')
-          install.packages('formatR')
+          install.packages(c('styler', 'formatR', 'knitr', 'rmarkdown'))
         shell: Rscript {0}
 
       - name: Check Python formatting
@@ -68,7 +67,7 @@ jobs:
       - name: Install formatters
         run: |
           pip install black isort
-          Rscript -e 'install.packages(c("styler", "formatR"))'
+          Rscript -e 'install.packages(c("styler", "formatR", "knitr", "rmarkdown"))'
 
       - name: Format code
         run: |
