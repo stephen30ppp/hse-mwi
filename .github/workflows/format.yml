@@ -1,16 +1,14 @@
-name: Repository Maintenance
+name: Format Code
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  schedule:
-    - cron: '0 0 * * 1'  # Weekly on Monday
   workflow_dispatch:
 
 jobs:
-  format-r-code:
+  check-formatting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -37,8 +35,8 @@ jobs:
           if (length(changes) > 0) exit(1)
         shell: Rscript {0}
 
-  create-format-pr:
-    needs: format-r-code
+  create-formatting-branch:
+    needs: check-formatting
     if: failure()
     runs-on: ubuntu-latest
     steps:
@@ -79,60 +77,3 @@ jobs:
           body: 'Automated R code formatting changes'
           branch: ${{ env.BRANCH_NAME }}
           base: main
-
-  stale:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/stale@v8
-        with:
-          stale-issue-message: 'This issue has been marked as stale due to 60 days of inactivity.'
-          stale-pr-message: 'This PR has been marked as stale due to 60 days of inactivity.'
-          days-before-stale: 60
-          days-before-close: 7
-
-  broken-links:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check broken links
-        uses: ruzickap/action-my-broken-link-checker@v2
-        with:
-          url: "https://github.com/${{ github.repository }}"
-          cmd_params: "--skip-tls-verification"
-
-  validate-yaml:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ibiqlik/action-yamllint@v3
-        with:
-          file_or_dir: .
-
-  pr-labeler:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/labeler@v4
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-
-  dependency-review:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/dependency-review-action@v3
-
-  size-labeler:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: codelytv/pr-size-labeler@v1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          xs_label: 'size/xs'
-          xs_max_size: '10'
-          s_label: 'size/s'
-          s_max_size: '100'
-          m_label: 'size/m'
-          m_max_size: '500'
-          l_label: 'size/l'
-          l_max_size: '1000'
-          xl_label: 'size/xl'
