@@ -1,0 +1,83 @@
+name: Format Code
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.2.0'
+
+      - name: Install Python tools
+        run: |
+          pip install black isort
+          
+      - name: Install R tools
+        run: |
+          install.packages('styler')
+          install.packages('formatR')
+        shell: Rscript {0}
+
+      - name: Check Python formatting
+        run: |
+          black --check .
+          isort --check .
+          
+      - name: Check R formatting
+        run: |
+          changes <- styler::style_dir(".", dry = "on")
+          if (length(changes) > 0) exit(1)
+        shell: Rscript {0}
+
+  apply-formatting:
+    needs: check-formatting
+    runs-on: ubuntu-latest
+    if: failure()
+    environment:
+      name: formatting-approval
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.2.0'
+
+      - name: Install formatters
+        run: |
+          pip install black isort
+          Rscript -e 'install.packages(c("styler", "formatR"))'
+
+      - name: Format code
+        run: |
+          black .
+          isort .
+          Rscript -e 'styler::style_dir(".")'
+          Rscript -e 'formatR::tidy_dir(".")'
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Style code with Black, isort, styler, and formatR"
