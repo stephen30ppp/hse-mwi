@@ -3,77 +3,52 @@ name: Format Code
 on:
   push:
     branches: [ main ]
+    paths:
+      - '**.R'
+      - '**.Rmd'
   pull_request:
     branches: [ main ]
+    paths:
+      - '**.R'
+      - '**.Rmd'
   workflow_dispatch:
 
 jobs:
-  check-formatting:
+  format:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v3
-          
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
+      - uses: actions/checkout@v4
+      
+      - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: '4.2.0'
+          r-version: 'release'
           
-      - name: Install R tools
-        run: |
-          install.packages(c('styler', 'formatR', 'knitr', 'rmarkdown'))
-        shell: Rscript {0}
-          
-      - name: Check R formatting
-        run: |
-          library(styler)
-          print("Files to be checked:")
-          rfiles <- list.files(pattern = "\\.(R|Rmd)$", recursive = TRUE)
-          print(rfiles)
-          changes <- style_dir(".", dry = "on")
-          print("Changes needed:")
-          print(changes)
-          if (length(changes) > 0) exit(1)
-        shell: Rscript {0}
-
-  create-formatting-branch:
-    needs: check-formatting
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        
-      - name: Create formatting branch
-        run: |
-          DATE=$(date +%Y%m%d_%H%M%S)
-          echo "BRANCH_NAME=format-$DATE" >> $GITHUB_ENV
-          git checkout -b "format-$DATE"
-          
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          r-version: '4.2.0'
-
-      - name: Install formatters
-        run: |
-          Rscript -e 'install.packages(c("styler", "formatR", "knitr", "rmarkdown"))'
-
+          packages: |
+            any::styler
+            any::formatR
+          
       - name: Format code
         run: |
-          Rscript -e 'styler::style_dir(".")'
-          Rscript -e 'formatR::tidy_dir(".")'
-
-      - name: Push changes
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add .
-          git commit -m "Auto format R code"
-          git push origin "$BRANCH_NAME"
-
+          Rscript -e '
+          library(styler)
+          files <- list.files(pattern = "\\.(R|Rmd)$", recursive = TRUE)
+          if (length(files) > 0) {
+            style_dir(".")
+          }'
+          
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
-          title: 'Auto: Format R code'
-          body: 'Automated R code formatting changes'
-          branch: "${{ env.BRANCH_NAME }}"
-          base: main
+          commit-message: 'style: format R code'
+          title: 'style: format R code'
+          body: |
+            Automated R code formatting using styler package.
+            
+            - Formatted .R and .Rmd files
+            - Applied tidyverse style guide
+          branch: auto-format
+          delete-branch: true
+          labels: automated pr, formatting
