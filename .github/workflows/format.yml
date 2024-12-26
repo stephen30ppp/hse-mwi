@@ -43,17 +43,19 @@ jobs:
           if (length(changes) > 0) exit(1)
         shell: Rscript {0}
 
-  apply-formatting:
+  create-formatting-branch:
     needs: check-formatting
-    runs-on: ubuntu-latest
     if: failure()
-    environment:
-      name: formatting-approval
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.head_ref }}
-
+        
+      - name: Create formatting branch
+        run: |
+          DATE=$(date +%Y%m%d_%H%M%S)
+          BRANCH_NAME="format/auto-${DATE}"
+          git checkout -b $BRANCH_NAME
+          
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -76,7 +78,18 @@ jobs:
           Rscript -e 'styler::style_dir(".")'
           Rscript -e 'formatR::tidy_dir(".")'
 
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4
+      - name: Push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Auto format code"
+          git push origin HEAD
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
         with:
-          commit_message: "Style code with Black, isort, styler, and formatR"
+          title: 'Auto: Format code'
+          body: 'Automated code formatting changes'
+          branch: ${{ env.BRANCH_NAME }}
+          base: main
