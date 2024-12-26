@@ -1,5 +1,6 @@
 # Mental Wellness Index™ (MWI)
 
+
 # Outline
 
 - [Mental Wellness Index (MWI)](#Mental-Wellness-Index-(MWI))
