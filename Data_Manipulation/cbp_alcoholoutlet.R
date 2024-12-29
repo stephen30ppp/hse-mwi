@@ -2,8 +2,8 @@
 
 # Author: Karen Jiang
 # Version: 2021-12-27
-# Last updated: 16/11/24 by Gih Ming
 
+# Packages
 library(dplyr)
 library(tidycensus)
 library(censusapi)
@@ -11,27 +11,36 @@ library(readxl)
 
 source("Processing_Pipeline/crosswalk_func.R")
 
-# Set Data Folder 
-base_folder <- gsub("\\\\", "/", gsub("OneDrive - ", "", Sys.getenv("OneDrive")))
-data_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Raw")
-resource_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Resources")
-preprocessed_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Preprocessed")
+# Set Data & Resource Folders
+data_folder <- file.path(
+  gsub("\\\\","/", gsub("OneDrive - ","", Sys.getenv("OneDrive"))), 
+  "Health and Social Equity - SJP - BHN Score Creation",
+  "Data", "Raw")
 
+resource_folder <-file.path(
+  gsub("\\\\","/", gsub("OneDrive - ","", Sys.getenv("OneDrive"))), 
+  "Health and Social Equity - SJP - BHN Score Creation",
+  "Data", "Resources")
 
-# Load state grocery laws
-grocery_states <- read_xlsx(file.path(resource_folder, "BWL_Grocery_Laws.xlsx"), skip = 1) %>%
-  mutate(across(3:5, ~ . == "Y"),  # Convert "Y" to TRUE
-         any_alc_sales = rowSums(across(3:5), na.rm = TRUE) > 0)
+# Spreadsheet with state by state Grocery Laws
+grocery_states <- read_xlsx(file.path(resource_folder, "BWL_Grocery_Laws.xlsx"), skip = 1)
+# Create column with indicator if state allows ANY type of alc sales
+grocery_states[,3:5] <- ifelse(grocery_states[,3:5] == "Y", TRUE, FALSE)
+grocery_states$any_alc_sales <- ifelse(rowSums(grocery_states[,3:5] , na.rm = T) > 0, TRUE, FALSE)
 
 # Function to get cbp code from api, and return df with county FIPS and number of establishments   
-get_cbp <- function(naics, name) {
-  getCensus(name = "cbp",
-            key = Sys.getenv("CENSUS_API_KEY"),
-            vintage = "2020",
-            vars = "ESTAB",
-            region = "county:*",
-            NAICS2017 = naics) %>%
-    transmute(fips = paste0(state, county), !!name := ESTAB)
+get_cbp <- function(naics, name){
+  dat <- getCensus(name = "cbp",
+                   key = Sys.getenv("CENSUS_API_KEY"),
+                   vintage = "2020",
+                   vars = "ESTAB",
+                   region = "county:*",
+                   NAICS2017 = naics
+  ) %>%
+    mutate(fips = paste0(state,county)) %>%
+    select(fips, ESTAB) 
+  colnames(dat) <- c("fips", name)
+  return(dat)
 }
 
 # Pull all counts for BWL, convenience stores, and convenience and gas stores
@@ -41,48 +50,41 @@ convenience_gas <- get_cbp(447110, "convenience_gas") #2942 counties
 grocery <- get_cbp(445110, "grocery") #2354 counties
 
 # Pull counts for convenience, convenience/gas, grocery stores within allowed states
-allowed_states <- grocery_states %>%
-  filter(any_alc_sales) %>%
-  pull(Abbrev)
-state_fips <- unique(fips_codes[, 1:2])
-
-allowed_counties <- county_cw %>%
+allowed_states <- sapply(grocery_states[grocery_states$any_alc_sales,"Abbrev"], 
+                         as.character)
+state_fips <- unique(fips_codes[,1:2])
+allowed_counties <- county_cw %>% 
   left_join(state_fips, by = c("STATE" = "state_code")) %>%
-  filter(state %in% allowed_states) %>%
-  pull(GEOID)
+  filter(state %in% allowed_states)
 
-# Filter store data by allowed counties
-filter_allowed <- function(data) data %>% filter(fips %in% allowed_counties)
+convenience <- convenience %>% filter(fips %in% allowed_counties$GEOID) #1134 counties
+convenience_gas <- convenience_gas %>% filter(fips %in% allowed_counties$GEOID) #2802 counties
+grocery <- grocery %>% filter(fips %in% allowed_counties$GEOID) #2191 counties
 
-bwl <- filter_allowed(bwl)
-convenience <- filter_allowed(convenience)
-convenience_gas <- filter_allowed(convenience_gas)
-grocery <- filter_allowed(grocery)
+# Combine outlets together into ESTAB count
+all <- full_join(bwl, convenience, by = "fips") %>%
+  full_join(convenience_gas, by = "fips") %>%
+  full_join(grocery, by = "fips") 
+all[is.na(all)] <- 0
+all <- all %>%
+  mutate(ESTAB = bwl + convenience + convenience_gas + grocery) %>%
+  select(ESTAB, fips)
 
-# Combine and calculate total establishments
-all <- list(bwl, convenience, convenience_gas, grocery) %>%
-  reduce(full_join, by = "fips") %>%
-  mutate(across(everything(), ~ replace_na(., 0))) %>%
-  rowwise() %>%
-  mutate(ESTAB = sum(c_across(-fips))) %>%
-  ungroup() %>%
-  select(fips, ESTAB)
-
-# Retrieve population data
+# Get population denominators from ACS ------
 pop <- get_acs(geography = "county",
                output = "wide",
                year = 2020,
                survey = "acs5",
-               variables = "B01001_001") %>%
-  select(GEOID, population = B01001_001E)
+               variables = "B01001_001",
+               geometry = F
+) %>%
+  select(GEOID, B01001_001E)
 
 # Join population denominators by county
-# Merge and calculate alcohol outlet density
-cbp <- all %>%
-  left_join(pop, by = c("fips" = "GEOID")) %>%
-  mutate(alcoholoutlet_pop = ESTAB / population,
+cbp <- full_join(all, pop, by = c("fips" = "GEOID")) %>%
+  mutate(alcoholoutlet_pop = ESTAB / B01001_001E, 
          # counties with NA establishment set to 0
-         alcoholoutlet_pop = replace_na(alcoholoutlet_pop, 0)) %>%
+         alcoholoutlet_pop = ifelse(is.na(alcoholoutlet_pop), 0, alcoholoutlet_pop)) %>%
   select(fips, alcoholoutlet_pop)
 
 
@@ -92,5 +94,10 @@ data_folder <- file.path(
   "Health and Social Equity - SJP - BHN Score Creation",
   "Data", "Preprocessed")
 
-# Write to CSV
-write_csv(cbp, file.path(preprocessed_folder, "CBP_County_AlcoholOutlet.csv"), na = "")
+write.csv(cbp, 
+          file = file.path(
+            data_folder,
+            "CBP_County_AlcoholOutlet.csv"
+          ), 
+          row.names = F, 
+          na = "")
