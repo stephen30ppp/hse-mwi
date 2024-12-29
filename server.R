@@ -15,7 +15,7 @@ server <- function(input, output, session) {
     hl = FALSE,
     ZCTA = ""
   )
-  
+
   st_sub <- reactiveValues(
     idx = "pop",
     st = "Virginia",
@@ -24,7 +24,7 @@ server <- function(input, output, session) {
     us_map_fill = "Mental_Wellness_Index",
     is_all = FALSE
   )
-  
+
   # 观察输入的变化，更新反应式值
   observeEvent(input$st_focus, {
     idx <- st_sub$idx
@@ -39,7 +39,7 @@ server <- function(input, output, session) {
       st_sub$is_all <- FALSE
     }
   })
-  
+
   # 调用地图模块
   callModule(
     module = mapModule,
@@ -56,7 +56,7 @@ server <- function(input, output, session) {
     is_all = reactive(st_sub$is_all),
     focus_info = focus_info
   )
-  
+
   # 调用绘图模块
   callModule(
     module = plotModule,
@@ -73,6 +73,6 @@ server <- function(input, output, session) {
     hl = reactive(focus_info$hl),
     zcta_hl = reactive(focus_info$ZCTA)
   )
-  
+
   # ... 其他服务器逻辑（如处理用户交互、数据上传等）
 }

@@ -17,7 +17,7 @@ plotModuleUI <- function(id) {
 # 定义绘图模块的服务器函数
 plotModule <- function(input, output, session, fill, st, mwi, idx, ol, is_all, hl, zcta_hl) {
   ns <- session$ns
-  
+
   output$distr_title <- renderUI({
     HTML(paste0(
       "<b><center><font size = '3'>",
@@ -32,7 +32,7 @@ plotModule <- function(input, output, session, fill, st, mwi, idx, ol, is_all, h
       "</b></center></font>"
     ))
   })
-  
+
   output$plot <- renderPlotly({
     withProgress(message = "Rendering data distribution", {
       plot_bee_distr(

@@ -36,7 +36,7 @@ Navigate to the [full playlist here](https://youtube.com/playlist?list=PLkTApXQo
 
 ```{r, echo = FALSE}
 embed_youtube("5SsYGjfqbhk") %>%
-  use_bs_responsive() 
+  use_bs_responsive()
 ```
 
 
