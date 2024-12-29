@@ -1,25 +1,23 @@
-# Load necessary libraries
+# file: app.R
+
 library(shiny)
-library(ggplot2)
-library(dplyr)
-library(tibble)
-library(plotly)
 
-# Ensure row names are unique in your dataset
-df <- read.csv("path_to_your_data.csv")  # Replace with your actual file path
+# 从全局脚本加载包和关键数据/配置
+source("global.R")
 
-# Fix for duplicate row names
-rownames(df) <- make.unique(as.character(df$Numerator))
+# 从 R/ 文件夹加载所有功能性脚本：
+source("R/data_preprocessing.R")   # 数据预处理相关函数
+source("R/plot_functions.R")       # 绘图/可视化相关函数
+source("R/mod_explore_states.R")   # Explore States 模块
+source("R/mod_explore_zipcodes.R") # Explore ZIP Codes 模块
+source("R/mod_create_own_mwi.R")   # Create Your Own MWI 模块
+source("R/mod_mwi_toolkit.R")      # MWI Toolkit 模块
+source("R/server.R")               # 主 server 逻辑
 
-# Convert a column to row names if necessary
-df <- tibble::column_to_rownames(df, var = "Numerator")
+# 注意：mod_mwi_toolkit.R 可以只是单纯封装若干 UI 面板
 
-# Run your app
+# 最终运行 Shiny 应用：
 shinyApp(
-  ui = fluidPage(
-    # Your UI components here
-  ),
-  server = function(input, output) {
-    # Your server logic here
-  }
+  ui = main_ui,      # 在 server.R 或 mod_* 中我们会定义好 main_ui
+  server = main_srv  # 在 server.R 定义好的 server 逻辑
 )
