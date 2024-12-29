@@ -13,6 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::knit_hooks$set(optipng = knitr::hook_optipng)
 # NOTE: ADD REFERENCES TO MEASURES LATER
+
 ```
 
 <blockquote class="focus">
