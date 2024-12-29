@@ -21,7 +21,7 @@ The Mental Wellness Index is a framework and dashboard tool that provides a pict
 
 The intent of the Mental Wellness Index is to provide a snapshot of a community's mental wellness so that community leaders, public health officials, and funding entities can understand how they might best direct mental health support to build on a particular community's assets and fill in its gaps.
 
-\*ZIP Code Tabulation Area (ZCTA)
+> \*ZIP Code Tabulation Area (ZCTA)
 
 ## MWI Domains & Measures
 
@@ -31,7 +31,7 @@ The MWI creates a score for each zip code between 0 and 100, such that:
 
 -   lower values indicate more **obstacles** that **challenge** community mental wellness
 
-^ indicates measures that are race stratified
+> The symbol **^** indicates measures that are race stratified
 
 ![](www/media/MWI%20Full%20Measures.png)
 
@@ -45,7 +45,7 @@ Data has been updated to most recently available as of January 24, 2023. If you 
 
 # Set Up MWI and Create Your Own MWI
 
-To set up and simply run the Mental Wellness Index Tool, follow instructions 1 - 8. 
+To set up and simply run the Mental Wellness Index Tool, follow instructions 1 - 7. 
 
 To create your own Mental Wellness Index, you can follow the rest of the instructions to run the Mental Wellness Index Tool on your local computer. Follow instructions 8+ below to create your own MWI for your community below by adjusting weights and/or adding your own data and metadata.
 
@@ -58,17 +58,15 @@ To create your own Mental Wellness Index, you can follow the rest of the instruc
 4. In the unzipped folder, open "app.R" in RStudio. This should open RStudio and the "app.R" script in the top left hand corner of the application.
 
 5. In the console window, which is in the bottom left hand corner, enter the following line and answer "yes" to all prompts in the console as you install these packages:
-   * install.packages('readxl', 'writexl', 'htmltools', 'shiny', 'tigris', 'leaflet', 'RColorBrewer', 'sf', 'plotly', 'ggbeeswarm', 'shinyWidgets', 'sass', 'shinycssloaders', 'shinyBS', 'DT', 'dplyr')
+   * install.packages(c('readxl', 'writexl', 'htmltools', 'shiny', 'shinyjs', 'tigris', 'leaflet', 'RColorBrewer', 'sf', 'plotly', 'ggbeeswarm', 'shinyWidgets', 'sass', 'shinycssloaders', 'shinyBS', 'DT', 'dplyr'))
 
-6. In "app.R", navigate to line 11, which should say "app_local <- FALSE". Change FALSE to TRUE.
+6. In the top right hand corner of the "app.R" window, you should see "Run App". Click the small downward arrow to the right of that and click "Run External". Then click "Run App".
 
-7. In the top right hand corner of the "app.R" window, you should see "Run App". Click the small downward arrow to the right of that and click "Run External". Then click "Run App".
+7. After a delay (this will be slow the first time, then quicker after that), the Mental Wellness Index Tool should open in your browser. Click on the "Create Your Own MWI" tab and follow the remaining steps to create your own MWI.
 
-8. After a delay (this will be slow the first time, then quicker after that), the Mental Wellness Index Tool should open in your browser. Click on the "Create Your Own MWI" tab and follow the remaining steps to create your own MWI.
+8. If you are only adjusting weights or subsetting to specific ZIP Codes for included data, skip the next step. This can also be done on the website [here](https://sjp.mitre.org/mwi).
 
-9. If you are only adjusting weights or subsetting to specific ZIP Codes for included data, skip the next step. This can also be done on the website [here](https://sjp.mitre.org/mwi).
-
-10. Put each of your datasets in a CSV (comma separated value) format, with one column corresponding to the geographical ID of the data, a column corresponding to the numerator of the data, and another column corresponding to the denominator (if needed).
+9. Put each of your datasets in a CSV (comma separated value) format, with one column corresponding to the geographical ID of the data, a column corresponding to the numerator of the data, and another column corresponding to the denominator (if needed).
    * Accepted geographical ID types are always numeric and include the following:
       * ZCTA: 5 digit ZCTA (example: 35406)
       * County: 5 digit County FIPS Code (2 digits state code and 3 digit county code, example: 01001)
@@ -79,18 +77,18 @@ To create your own Mental Wellness Index, you can follow the rest of the instruc
    * Missing data should have cells left blank.
    * If race stratified, there should be two columns: one ending in '_pop' corresponding to the overall population measure, and one ending in '_black' corresponding to the black populations measure. In the Metadata.xlsx file edit, that row's 'Preprocessed' column should be set to TRUE.
 
-11. Download Metadata.xlsx with the button below. If adding custom data, add a row and fill in information for each measure you want to add to the Mental Wellness Index. Descriptions for each column can be found in the 'Column Descriptions' sheet of the Metadata.xlsx. Note that all column names, with the exception of 'denominator', must be filled out.
+10. Download Metadata.xlsx with the button below. If adding custom data, add a row and fill in information for each measure you want to add to the Mental Wellness Index. Descriptions for each column can be found in the 'Column Descriptions' sheet of the Metadata.xlsx. Note that all column names, with the exception of 'denominator', must be filled out.
    * If you have multiple measures in one file, add a row for each measure and its qualities, but specify the same file name.
    * If you would like to remove a measure in your MWI, either delete the measure row or set its weight to 0.
    * If you would only like to adjust weights, change only the weight column to the desired values. Note that penalties for race stratifications and geographic granularity are still applied and total weights are scaled to sum to 100.
 
-12. Put your data (if using) and the updated Metadata.xlsx file in a ZIP file (.zip).
+11. Put your data (if using) and the updated Metadata.xlsx file in a ZIP file (.zip).
 
-13. Upload your ZIP file and click 'Create Custom MWI' below. This will take some time, depending on the amount of measures included.
+12. Upload your ZIP file and click 'Create Custom MWI' below. This will take some time, depending on the amount of measures included.
 
-14. Once the custom MWI creation is complete, click 'Download Custom MWI' to download an .RData file with all of the needed information to view your MWI in this tool. Note: if you navigate away from this page, all processing and data will be lost! Nothing is stored within this application.
+13. Once the custom MWI creation is complete, click 'Download Custom MWI' to download an .RData file with all of the needed information to view your MWI in this tool. Note: if you navigate away from this page, all processing and data will be lost! Nothing is stored within this application.
 
-15. To view your MWI, click the 'Custom MWI Upload' box under 'Explore States' or 'Explore ZIP Codes' and upload the downloaded '.RData' file.
+14. To view your MWI, click the 'Custom MWI Upload' box under 'Explore States' or 'Explore ZIP Codes' and upload the downloaded '.RData' file.
 
 # Using MWI Data
 
@@ -107,7 +105,7 @@ Note: this section is primarily for contributors.
 
 ## Data Pipeline
 
-![](www/media/Data%20Pipeline.png)
+![](www/media/Data%20Pipeline%20(White%20Background).png)
 
 ## Data Sync
 
