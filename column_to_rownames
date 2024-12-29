@@ -1,0 +1,8 @@
+# Install and load the required package
+if (!requireNamespace("tibble", quietly = TRUE)) {
+  install.packages("tibble")
+}
+library(tibble)
+
+# Assuming 'df' is your data frame
+df <- tibble::column_to_rownames(df, var = "Numerator")
