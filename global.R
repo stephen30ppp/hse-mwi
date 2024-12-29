@@ -1,41 +1,32 @@
-# global.R
+# file: global.R
 
-# 加载必要的包
+# 全局选项、库加载 ----
+library(readxl)
+library(writexl)
+library(htmltools)
 library(shiny)
+library(tigris)
+library(leaflet)
+library(RColorBrewer)
+library(sf)
+library(plotly)
+library(ggbeeswarm)
 library(shinyWidgets)
+library(sass)
+library(shinycssloaders)
 library(shinyBS)
 library(DT)
-library(leaflet)
-library(plotly)
-library(sf)
 library(dplyr)
-library(readxl)
-library(stringr)
-library(ggplot2)
-library(ggbeeswarm)
 
-# 设置全局变量
-data_folder <- "Data"
-show_mitre <- TRUE
+options(shiny.maxRequestSize = 300 * 1024^2)
 
-# 加载数据预处理脚本
-source("R/data_preprocessing.R")
+# 如果有其他全局变量（例如 show_mitre, data_folder, index_types, territories 等等）也可在此定义
+# 例如：
+show_mitre <- TRUE  # 假设在 original code 里是从 app_config.R 读取，这里可直接设定或者 source("app_config.R")
 
-# 预处理数据
-preprocessed_data <- load_and_preprocess_data(data_folder)
+data_folder <- file.path("Data")
 
-# 将预处理后的数据存储为全局变量
-m_reg <- preprocessed_data$m_reg
-info_dat <- preprocessed_data$info_dat
-mwi <- preprocessed_data$mwi
-geodat <- preprocessed_data$geodat
-geopts <- preprocessed_data$geopts
-measure_to_names <- preprocessed_data$measure_to_names
-meas_col_to_type <- preprocessed_data$meas_col_to_type
-meas_colors_pal <- preprocessed_data$meas_colors_pal
-avail_measures <- preprocessed_data$avail_measures
-avail_meas_list <- preprocessed_data$avail_meas_list
-# ... 其他全局数据
+index_types <- c("Population" = "pop", "Black" = "black")
+territories <- c("AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI")
 
-# 加载自定义函数
-source("R/utility_functions.R")
+# 如果还有更多的全局配置，也可以放在这里
