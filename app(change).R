@@ -1,11 +1,25 @@
-# app.R
-
+# Load necessary libraries
 library(shiny)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(plotly)
 
-# 加载全局变量和函数
-source("global.R")
-source("ui.R")
-source("server.R")
+# Ensure row names are unique in your dataset
+df <- read.csv("path_to_your_data.csv")  # Replace with your actual file path
 
-# 启动 Shiny 应用
-shinyApp(ui = ui, server = server)
+# Fix for duplicate row names
+rownames(df) <- make.unique(as.character(df$Numerator))
+
+# Convert a column to row names if necessary
+df <- tibble::column_to_rownames(df, var = "Numerator")
+
+# Run your app
+shinyApp(
+  ui = fluidPage(
+    # Your UI components here
+  ),
+  server = function(input, output) {
+    # Your server logic here
+  }
+)
