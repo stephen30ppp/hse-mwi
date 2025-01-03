@@ -3,122 +3,133 @@
 # 模块化 Create Your Own MWI 页面及其服务器逻辑
 # -----------------------------------------------------------------------------
 
+# 如果需要 data_folder, 可在 global.R 或这里定义:
+# data_folder <- "D:/software/hse-mwi-assignment1_YANGUO-XU/Data"
+
 mod_create_own_mwi_ui <- function(id){
   ns <- NS(id)
   
-  navbarMenu(
-    "Create Your Own MWI",
+  # 注意：此处不再使用 navbarMenu(...),
+  # 而是返回单个 tabPanel("Create Your Own MWI", ...),
+  # 在内部用 tabsetPanel 组织 3 个子页面
+  tabPanel(
+    title = "Create Your Own MWI",  # 这是在主 navbarPage 中的标签名
     
-    # 1) Adjust MWI Weights and ZIP Codes
-    tabPanel(
-      title = div("Adjust MWI Weights and ZIP Codes", class = "explore"),
-      fluidRow(
-        column(width = 2),
-        column(
-          width = 8,
-          HTML("<center><h2>Change weights and ZIP Codes ...</h2></center>"),
-          HTML("<p align='justify'>... （省略若干介绍性文本，可完整粘贴）</p>"),
-          hr(),
-          HTML("<center>"),
-          tabsetPanel(
-            # (A) Adjust MWI Weights
-            tabPanel(
-              "Adjust MWI Weights",
-              DTOutput(ns("custom_mwi_weights"))
-            ),
-            # (B) Subset Zip Codes/ZCTAs
-            tabPanel(
-              "Subset Zip Codes/ZCTAs",
-              br(),
-              textAreaInput(
-                ns("custom_mwi_zips"),
-                "Enter ZIP Codes or ZCTAs ...",
-                placeholder = "12345\n10034\n19567\n...",
-                height = "200px",
-                width = "400px"
+    # 这里用一个 tabsetPanel 来承载之前的 3 个子页面
+    tabsetPanel(
+      type = "tabs",  # 或 "pills"
+      
+      # 1) Adjust MWI Weights and ZIP Codes ----
+      tabPanel(
+        title = "Adjust MWI Weights and ZIP Codes",
+        fluidRow(
+          column(width = 2),
+          column(
+            width = 8,
+            HTML("<center><h2>Change weights and ZIP Codes ...</h2></center>"),
+            HTML("<p align='justify'>... （省略若干介绍性文本，可完整粘贴）</p>"),
+            hr(),
+            HTML("<center>"),
+            tabsetPanel(
+              # (A) Adjust MWI Weights
+              tabPanel(
+                "Adjust MWI Weights",
+                DTOutput(ns("custom_mwi_weights"))
               ),
-              switchInput(
-                ns("custom_mwi_zip_choice"),
-                onLabel = "ZIP Code",
-                offLabel = "ZCTA",
-                value = TRUE,
-                onStatus = "secondary",
-                offStatus = "secondary"
+              # (B) Subset Zip Codes/ZCTAs
+              tabPanel(
+                "Subset Zip Codes/ZCTAs",
+                br(),
+                textAreaInput(
+                  ns("custom_mwi_zips"),
+                  "Enter ZIP Codes or ZCTAs ...",
+                  placeholder = "12345\n10034\n19567\n...",
+                  height = "200px",
+                  width = "400px"
+                ),
+                switchInput(
+                  ns("custom_mwi_zip_choice"),
+                  onLabel = "ZIP Code",
+                  offLabel = "ZCTA",
+                  value = TRUE,
+                  onStatus = "secondary",
+                  offStatus = "secondary"
+                )
               )
+            ),
+            HTML("<br><br>"),
+            actionButton(ns("custom_mwi_go_weights"), "Create Custom MWI"),
+            downloadButton(ns("download_custom_mwi_weights"), "Download Custom MWI"),
+            HTML("<br><br>"),
+            verbatimTextOutput(ns("custom_error_weights")),
+            HTML("</center>")
+          ),
+          column(width = 2)
+        )
+      ),
+      
+      # 2) Add Local Data to MWI ----
+      tabPanel(
+        title = "Add Local Data to MWI",
+        fluidRow(
+          column(width = 2),
+          column(
+            width = 8,
+            HTML("<center><h2>Add Local Data to MWI</h2></center>"),
+            HTML("<p align='justify'> ... （省略介绍） </p>"),
+            tagList(
+              hr(),
+              HTML("<center>"),
+              downloadButton(ns("download_metadata"), "Download Metadata.xlsx"),
+              HTML("<br><br>"),
+              fileInput(
+                ns("custom_zip"),
+                "Upload Custom Data Files (.xlsx, .csv)...",
+                accept = c(".xlsx", ".csv"),
+                multiple = TRUE
+              ),
+              actionButton(ns("custom_mwi_go"), "Create Custom MWI"),
+              downloadButton(ns("download_custom_mwi"), "Download Custom MWI"),
+              HTML("<br><br>"),
+              verbatimTextOutput(ns("custom_error")),
+              HTML("</center>")
             )
           ),
-          HTML("<br><br>"),
-          actionButton(ns("custom_mwi_go_weights"), "Create Custom MWI"),
-          downloadButton(ns("download_custom_mwi_weights"), "Download Custom MWI"),
-          HTML("<br><br>"),
-          verbatimTextOutput(ns("custom_error_weights")),
-          HTML("</center>")
-        ),
-        column(width = 2)
+          column(width = 2)
+        )
+      ),
+      
+      # 3) Add Local Data to MWI on Your Computer ----
+      tabPanel(
+        title = "Add Local Data to MWI on Your Computer",
+        fluidRow(
+          column(width = 2),
+          column(
+            width = 8,
+            HTML("<center><h2>Add Local Data to MWI on Your Computer</h2></center>"),
+            HTML("<p align='justify'> ... （同样省略介绍） </p>"),
+            tagList(
+              hr(),
+              HTML("<center>"),
+              downloadButton(ns("download_metadata_comp"), "Download Metadata.xlsx"),
+              HTML("<br><br>"),
+              fileInput(
+                ns("custom_zip_comp"),
+                "Upload Custom Data Files (.xlsx, .csv)...",
+                accept = c(".xlsx", ".csv"),
+                multiple = TRUE
+              ),
+              actionButton(ns("custom_mwi_go_comp"), "Create Custom MWI"),
+              downloadButton(ns("download_custom_mwi_comp"), "Download Custom MWI"),
+              HTML("<br><br>"),
+              verbatimTextOutput(ns("custom_error_comp")),
+              HTML("</center>")
+            )
+          ),
+          column(width = 2)
+        )
       )
-    ),
-    
-    # 2) Add Local Data to MWI
-    tabPanel(
-      title = div("Add Local Data to MWI", class = "explore"),
-      fluidRow(
-        column(width = 2),
-        column(
-          width = 8,
-          HTML("<center><h2>Add Local Data to MWI</h2></center>"),
-          HTML("<p align='justify'> ... （省略介绍） </p>"),
-          tagList(
-            hr(),
-            HTML("<center>"),
-            downloadButton(ns("download_metadata"), "Download Metadata.xlsx"),
-            HTML("<br><br>"),
-            fileInput(
-              ns("custom_zip"),
-              "Upload Custom Data Files (.xlsx, .csv)...",
-              accept = c(".xlsx", ".csv"),
-              multiple = TRUE
-            ),
-            actionButton(ns("custom_mwi_go"), "Create Custom MWI"),
-            downloadButton(ns("download_custom_mwi"), "Download Custom MWI"),
-            HTML("<br><br>"),
-            verbatimTextOutput(ns("custom_error")),
-            HTML("</center>")
-          )
-        ),
-        column(width = 2)
-      )
-    ),
-    
-    # 3) Add Local Data to MWI on Your Computer
-    tabPanel(
-      title = div("Add Local Data to MWI on Your Computer", class = "explore"),
-      fluidRow(
-        column(width = 2),
-        column(
-          width = 8,
-          HTML("<center><h2>Add Local Data to MWI on Your Computer</h2></center>"),
-          HTML("<p align='justify'> ... （同样省略介绍） </p>"),
-          tagList(
-            hr(),
-            HTML("<center>"),
-            downloadButton(ns("download_metadata_comp"), "Download Metadata.xlsx"),
-            HTML("<br><br>"),
-            fileInput(
-              ns("custom_zip_comp"),
-              "Upload Custom Data Files (.xlsx, .csv)...",
-              accept = c(".xlsx", ".csv"),
-              multiple = TRUE
-            ),
-            actionButton(ns("custom_mwi_go_comp"), "Create Custom MWI"),
-            downloadButton(ns("download_custom_mwi_comp"), "Download Custom MWI"),
-            HTML("<br><br>"),
-            verbatimTextOutput(ns("custom_error_comp")),
-            HTML("</center>")
-          )
-        ),
-        column(width = 2)
-      )
-    )
+    ) # end of tabsetPanel
   )
 }
 
@@ -128,12 +139,12 @@ mod_create_own_mwi_server <- function(id, ol){
     ns <- session$ns
     
     # -------------------------------------------
-    # 自定义 MWI 相关的server逻辑
+    # 自定义 MWI 相关的 server 逻辑
     # 包含 weight 调整, subset zip codes, pipeline 等
     # -------------------------------------------
     
     # 1) table of custom weights
-    upd_weights <- reactiveVal(sub_m)  # sub_m 来自global (subset of measure registry)
+    upd_weights <- reactiveVal(sub_m)  # sub_m 来自 global (subset of measure registry)
     
     output$custom_mwi_weights <- renderDT({
       datatable(
@@ -178,11 +189,8 @@ mod_create_own_mwi_server <- function(id, ol){
     button_click <- reactiveValues(go = 0, weights = 0, comp = 0)
     overall_list <- reactiveVal()
     
-    # 核心pipeline: 
-    # 这里粘贴你原先 pipeline 的处理, 包含 mwi_pipeline() 之类
-    
+    # 如果有 pipeline，可以 source 或在此写:
     observeEvent(c(input$custom_mwi_go, input$custom_mwi_go_comp, input$custom_mwi_go_weights), {
-      # 判定谁点击了
       press <- if (input$custom_mwi_go[1] > button_click$go){
         "go"
       } else if (input$custom_mwi_go_comp[1] > button_click$comp){
@@ -195,17 +203,15 @@ mod_create_own_mwi_server <- function(id, ol){
       button_click$weights <- input$custom_mwi_go_weights[1]
       
       withProgress(message = "Creating custom MWI!", detail = "Loading data...", {
-        source(file.path("Processing_Pipeline", "pipeline_driver.R"))  # 如果你原先需要
+        # 如果你有 pipeline_driver.R:
+        # source(file.path("Processing_Pipeline", "pipeline_driver.R"))
         
-        # 下面完整拷贝你在 app.R 里写的 custom MWI 处理逻辑：
-        # 例如判断上传文件, 读取, 校验, 运行 pipeline, 产生 overall_out
+        # 处理文件上传、读取、校验、产生 overall_out
+        # ...
         
-        # ... (此处省略，保持你的原逻辑不变) ...
-        
-        # 最终, 你会有 overall_out
+        # Example:
         # overall_list(overall_out)
         
-        # 一旦成功: 
         output$custom_error <- output$custom_error_comp <- output$custom_error_weights <- renderText({
           "Complete! Click 'Download Custom MWI' to download..."
         })
@@ -225,8 +231,6 @@ mod_create_own_mwi_server <- function(id, ol){
           })
         }
       )
-    
-
     
   })
 }
