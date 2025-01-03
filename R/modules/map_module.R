@@ -16,7 +16,7 @@ mapModuleUI <- function(id) {
 # 定义地图模块的服务器函数
 mapModule <- function(input, output, session, data, fill_var, idx, ol, is_all, focus_info) {
   ns <- session$ns
-
+  
   output$map <- renderLeaflet({
     withProgress(message = "Rendering map", {
       us_proxy <- plot_map(
@@ -26,7 +26,7 @@ mapModule <- function(input, output, session, data, fill_var, idx, ol, is_all, f
         ol = ol,
         is_all = is_all()
       )
-
+      
       if (focus_info$hl) {
         # 添加高亮显示的多边形
         us_proxy <- plot_map(
@@ -40,11 +40,11 @@ mapModule <- function(input, output, session, data, fill_var, idx, ol, is_all, f
           zcta_choose = focus_info$ZCTA
         )
       }
-
+      
       us_proxy
     })
   })
-
+  
   output$map_legend <- renderUI({
     withProgress(message = "Rendering map legend", {
       # 生成地图图例的 HTML 内容
