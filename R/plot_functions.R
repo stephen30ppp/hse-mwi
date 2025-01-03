@@ -1,5 +1,5 @@
 # file: R/plot_functions.R
-
+data_folder <- "D:/software/hse-mwi-assignment1_YANGUO-XU/Data"
 # plot the overall map, filled by measure/score (LEAFLET)
 plot_map <- function(fill, geodat, idx, ol, is_all = FALSE, is_com = FALSE,
                      fill_opacity = 0.7,
