@@ -25,7 +25,6 @@ library(DT)
 # library(formattable)
 library(dplyr)
 
-
 options(shiny.maxRequestSize=300*1024^2)
 
 source("app_config.R")
@@ -718,35 +717,14 @@ html_color <- function(meas_color, text){
 # UI ----
 
 ui <- fluidPage(
-  # Include the Google Translate script
-  tags$head(
-    HTML(
-      "
-      <script type=\"text/javascript\">
-      function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-          pageLanguage: 'en',
-          includedLanguages: 'en,es,fr,de,zh-CN,ja,ar,ru,ms',
-          layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-        }, 'google_translate_element');
-      }
-      </script>
-      <script type=\"text/javascript\" src=\"//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit\"></script>
-      "
-    )
-  ),
-  
-  div(id = "google_translate_element", style = "float:right; padding:15px;"),
-  titlePanel("Please select your desired language"),
-  
   # Title panel sets text in the browser tab
   # This is necessary because the navbarPage title is html and not straight text
   div(
     titlePanel(
-      title = "", 
-      windowTitle = HTML(paste0("Mental Wellness Index™ Tool"))
+      title="", 
+      windowTitle=HTML(paste0("Mental Wellness Index™ Tool"))
     ),
-    style = "display:none"
+    style="display:none"
   ),
   
   navbarPage(
