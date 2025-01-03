@@ -24,14 +24,14 @@ map_county_to_fips <- function(cty_df, state_col, county_col, county_fips) {
         fips_candidates <- county_fips %>%
           filter(str_detect(str_to_lower(abbr), state) & str_detect(str_to_lower(county), county)) %>%
           pull(fips)
-        
+
         if (length(fips_candidates) > 1) {
           suffix <- ifelse(state == "la", "parish", "county")
           adjusted_county <- ifelse(str_detect(county, "city"), county, paste(county, suffix))
           fips_candidates[which.min(adist(adjusted_county, str_to_lower(county_fips$county[fips_candidates])))]
         } else if (length(fips_candidates) == 0) {
           correction_map <- c(
-            "prince georges" = "prince george's", "de kalb" = "dekalb", 
+            "prince georges" = "prince george's", "de kalb" = "dekalb",
             "la porte" = "laporte", "st. marys" = "st. mary's",
             "matanuska susitna" = "matanuska-susitna", "obrien" = "o'brien",
             "de soto" = "desoto", "la salle" = "lasalle"
@@ -60,21 +60,20 @@ ct_le <- read_csv(file.path(data_folder, "USALEEP_Life_Expectancy.CSV"), col_typ
 
 # Data cleaning
 cty_le <- cty_le %>%
-  mutate(across(everything(), ~if_else(. == "100+", "100", .))) %>%
+  mutate(across(everything(), ~ if_else(. == "100+", "100", .))) %>%
   mutate(across(where(is.character), as.numeric))
-  # Map FIPS codes to counties
-  mutate(
-    ST_ABBR = if_else(State == "District of Columbia", "DC", state.abb[match(State, state.name)]),
-    CNTY_NUM = map_county_to_fips(cty_le, "ST_ABBR", "County", county_fips)
-  )
-  column_to_rownames("CNTY_NUM")
+# Map FIPS codes to counties
+mutate(
+  ST_ABBR = if_else(State == "District of Columbia", "DC", state.abb[match(State, state.name)]),
+  CNTY_NUM = map_county_to_fips(cty_le, "ST_ABBR", "County", county_fips)
+)
+column_to_rownames("CNTY_NUM")
 
 # Update ct_le with additional life expectancy calculations
 ct_le <- ct_le %>%
   mutate(
     # Map CNTY_NUM to County values
     CNTY_NUM = str_c(STATE2KX, CNTY2KX),
-    
     baseline = cty_le[CNTY_NUM, "County.Value"],
     black_le = cty_le[CNTY_NUM, "Black"],
     modifier = black_le / baseline,
