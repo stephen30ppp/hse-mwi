@@ -13,7 +13,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::knit_hooks$set(optipng = knitr::hook_optipng)
 # NOTE: ONLY EDIT IN VISUAL RSTUDIO MODE
-
 ```
 
 Each measure used in the MWI Tool was assessed based on its strengths, limitations, and theoretical justification for inclusion into the tool. Detailed documentation for each measure can be accessed below.
