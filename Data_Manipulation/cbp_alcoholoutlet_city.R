@@ -12,7 +12,7 @@ library(stringr)
 
 source("Processing_Pipeline/crosswalk_func.R")
 
-# Set Data Folder
+# Set Data Folder 
 base_folder <- gsub("\\\\", "/", gsub("OneDrive - ", "", Sys.getenv("OneDrive")))
 data_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Raw")
 resource_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Resources")
@@ -20,9 +20,8 @@ preprocessed_folder <- file.path(base_folder, "Health and Social Equity - SJP - 
 
 # Read grocery states and process alcohol sales data
 grocery_states <- read_xlsx(file.path(resource_folder, "BWL_Grocery_Laws.xlsx"), skip = 1) %>%
-  mutate(across(3:5, ~ . == "Y"),
-    any_alc_sales = rowSums(across(3:5), na.rm = TRUE) > 0
-  )
+  mutate(across(3:5, ~ . == "Y"), 
+         any_alc_sales = rowSums(across(3:5), na.rm = TRUE) > 0)
 
 
 # Read in and clean zip code according to common mistakes
@@ -45,13 +44,13 @@ addl_us_cities <- read_zips(file.path(resource_folder, "Additional_ZIP_US_Cities
 
 
 # Load in CBP data ----------
-# NAICS Codes https://www.naics.com/code-search/?naicstrms=liquor
-# Beer, Wine, and Liquor Stores = 445310
-# Convenience Stores = 445120
-# Convenience Stores & Gas Stations = 447110
-# Grocery Stores = 445110
+  # NAICS Codes https://www.naics.com/code-search/?naicstrms=liquor
+  # Beer, Wine, and Liquor Stores = 445310
+  # Convenience Stores = 445120
+  # Convenience Stores & Gas Stations = 447110
+  # Grocery Stores = 445110
 
-# Drinking Places On Premise (not used) = 772410
+  # Drinking Places On Premise (not used) = 772410
 
 get_zbp <- function(naics, column_name) {
   getCensus(
@@ -61,8 +60,8 @@ get_zbp <- function(naics, column_name) {
     vars = c("ESTAB", "ZIPCODE"),
     NAICS2017 = naics
   ) %>%
-    # Grabbing the max establishment size from each ZIP Code group.
-    # Duplicate values are establishment counts by employee size.
+    # Grabbing the max establishment size from each ZIP Code group. 
+    # Duplicate values are establishment counts by employee size.  
     # Double checked with the original data and was an exact match.
     group_by(ZIPCODE) %>%
     slice_max(ESTAB, n = 1, with_ties = FALSE) %>%
@@ -77,10 +76,8 @@ convenience_gas <- get_zbp(447110, "convenience_gas")
 grocery <- get_zbp(445110, "grocery")
 
 # Filter grocery stores for allowed states
-allowed_states <- grocery_states %>%
-  filter(any_alc_sales) %>%
-  pull(Abbrev)
-zip_cw <- read_csv(file.path(resource_folder, "ZIP_Crosswalk.csv")) # Assuming zip crosswalk file exists
+allowed_states <- grocery_states %>% filter(any_alc_sales) %>% pull(Abbrev)
+zip_cw <- read_csv(file.path(resource_folder, "ZIP_Crosswalk.csv"))  # Assuming zip crosswalk file exists
 allowed_zips <- zip_cw %>% filter(STATE %in% allowed_states)
 grocery <- grocery %>% filter(ZIPCODE %in% allowed_zips$ZIP_CODE)
 
@@ -109,10 +106,8 @@ pop <- get_acs(
 # Merge CBP and population data
 cbp <- cbp %>%
   left_join(pop, by = "ZCTA") %>%
-  mutate(
-    City = us_cities[ZCTA, "place.name"],
-    State = us_cities[ZCTA, "state.code"]
-  )
+  mutate(City = us_cities[ZCTA, "place.name"],
+         State = us_cities[ZCTA, "state.code"])
 
 # Calculate alcohol outlet density
 cbp_city <- cbp %>%

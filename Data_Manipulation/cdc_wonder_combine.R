@@ -10,7 +10,7 @@ base_folder <- gsub("\\\\", "/", gsub("OneDrive - ", "", Sys.getenv("OneDrive"))
 data_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Raw", "CDC_WONDER")
 preprocessed_folder <- file.path(base_folder, "Health and Social Equity - SJP - BHN Score Creation", "Data", "Preprocessed")
 
-# Filter to only 10 years and map filenames
+# Filter to only 10 years and map filenames 
 selected_files <- list.files(data_folder, pattern = "2011_2020")
 
 # Define column mappings
@@ -36,9 +36,7 @@ column_mappings <- list(
 # Initialize the dataset with counties and county codes
 initialize_dataframe <- function(file) {
   df <- read.delim(file.path(data_folder, file), colClasses = c("County.Code" = "character"))
-  df <- df %>%
-    filter(County != "") %>%
-    select(County, County.Code)
+  df <- df %>% filter(County != "") %>% select(County, County.Code)
   rownames(df) <- df$County.Code
   return(df)
 }
@@ -53,7 +51,7 @@ for (file in selected_files) {
       Deaths = as.numeric(replace(Deaths, Deaths == "Suppressed", 4.5)),
       Population = as.numeric(replace(Population, Population == "Missing", NA))
     )
-
+  
   # Add mortality and population data to the main dataset
   full_df[df$County.Code, column_mappings$mortality[file]] <- df$Deaths
   full_df[df$County.Code, column_mappings$population[file]] <- df$Population
