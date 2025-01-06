@@ -1,35 +1,14 @@
-name: SonarCloud Analysis
-
-on:
-  push:
-    branches:
-      - main
-      - dev
-      - feature
-  pull_request:   
-    branches:
-      - main
-
 jobs:
   sonarcloud:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3 
+        uses: actions/checkout@v3
 
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-
-      - name: Run SonarCloud Scan
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  
+      - name: Set up SonarScanner
         run: |
-          sonar-scanner \
-          -Dsonar.projectKey=your_project_key \
-          -Dsonar.organization=your_organization \
-          -Dsonar.login=$SONAR_TOKEN
+          curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner-cli.zip
+          sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
+          export PATH="$PATH:/usr/local/sonar-scanner/bin"
