@@ -1,6 +1,6 @@
 # file: R/data_preprocessing.R
 library(readxl)
-data_folder <- "D:/software/hse-mwi-assignment1_YANGUO-XU/Data"
+data_folder <- "D:/software/hse-mwi-main/Data"
 territories <<- c("AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI")
 index_types <<- c("Population" = "pop", "Black" = "black")
 # 如果需要依赖 global.R 中的变量/包，需要确保在 global.R 之后 source
