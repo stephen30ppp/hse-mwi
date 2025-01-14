@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # 1. 检出代码
-      - name: Check out repo
+      - name: Checkout
         uses: actions/checkout@v3
 
       # 2. 安装并使用 Java 17
@@ -21,30 +21,37 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      
+
       # (可选) 查看当前 Java 版本，确认已切换成功
       - name: Check Java version
-        run: java -version
+        run: java -17
 
       # 3. 下载并解压 SonarScanner CLI
-      # （若你已经放在缓存或其他位置，可根据实际情况修改）
       - name: Install SonarScanner
         run: |
+          # 从 SonarSource 下载最新的 CLI 压缩包 (可换成 6.2.1 或其他版本)
           wget -qO sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
           unzip sonar-scanner.zip
           mv sonar-scanner-4.8.0.2856-linux sonar-scanner
-          # 将 sonar-scanner/bin 加入到 PATH，方便后续直接使用 'sonar-scanner' 命令
+
+          # 将解压后目录下的 bin 路径加入 GitHub Actions 的 PATH
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
 
-      # 4. 执行 SonarScanner
+      # 4. 执行 SonarScanner (真正使用 Java 17)
       - name: Run SonarScanner
         run: |
+          # 查看 SonarScanner 和 Java 版本，确认生效
+          which sonar-scanner || true
+          sonar-scanner -v || true
+          java -version || true
+
+          # 开始扫描，带上必要的参数
           sonar-scanner \
             -Dsonar.projectKey=my-hse-mwi-project \
             -Dsonar.organization=my-organization \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.exclusions="**/*.min.js,**/*.html,dist/**,build/**"
         env:
-          # 不要直接在脚本里写明文登录信息，而要通过 GitHub Secrets
+          # 尽量避免将 Token 写在明文里，改用 secrets 传递
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
