@@ -52,6 +52,6 @@ jobs:
             -Dsonar.organization=my-organization \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.exclusions="**/*.min.js,**/*.html,dist/**,build/**"
-        env:
+          env:
           # 尽量避免将 Token 写在明文里，改用 secrets 传递
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
