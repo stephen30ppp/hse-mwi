@@ -12,9 +12,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up SonarScanner
+      # - name: Set up SonarScanner
+      #   run: |
+      #     curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+      #     unzip sonar-scanner-cli.zip
+      #     sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
+      #     export PATH="$PATH:/usr/local/sonar-scanner/bin"
+      - name: Run SonarCloud analysis
+        env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          unzip sonar-scanner-cli.zip
-          sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
-          export PATH="$PATH:/usr/local/sonar-scanner/bin"
+          sonar-scanner \
+            -Dsonar.projectKey=your_project_key \
+            -Dsonar.organization=your_organization \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.exclusions=**/*.min.js, **/*.bundle.js, dist/**, build/**, **/*.html
