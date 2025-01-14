@@ -22,9 +22,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # (可选) 查看当前 Java 版本，确认已切换成功
-      - name: Check Java version
-        run: java -17
+     
 
       # 3. 下载并解压 SonarScanner CLI
       - name: Install SonarScanner
