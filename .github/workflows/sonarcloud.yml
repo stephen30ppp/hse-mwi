@@ -38,6 +38,8 @@ jobs:
 
       # 4. 执行 SonarScanner (真正使用 Java 17)
       - name: Run SonarScanner
+        env:
+         JAVA_HOME: /usr/lib/jvm/temurin-17-jdk
         run: |
           # 查看 SonarScanner 和 Java 版本，确认生效
           which sonar-scanner || true
