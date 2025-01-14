@@ -13,13 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Optional: Remove the manual setup of SonarScanner if you're using the prebuilt action below
-      # - name: Set up SonarScanner
-      #   run: |
-      #     curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-      #     unzip sonar-scanner-cli.zip
-      #     sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
-      #     export PATH="/usr/local/sonar-scanner/bin:$PATH"
+      
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v1
