@@ -19,8 +19,8 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v1
         with:
           args: |
-            -Dsonar.projectKey=your_project_key
-            -Dsonar.organization=your_organization
+            -Dsonar.projectKey=my-hse-mwi-project
+            -Dsonar.organization=my-organization
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
             -Dsonar.exclusions=**/*.min.js, **/*.html, dist/**, build/**
