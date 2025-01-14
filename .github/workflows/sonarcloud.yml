@@ -31,7 +31,7 @@ jobs:
           wget -qO sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
           unzip sonar-scanner.zip
-          mv sonar-scanner-4.8.0.2856-linux sonar-scanner
+          mv sonar-scanner-6.2.1.4610-linux sonar-scanner
 
           # 将解压后目录下的 bin 路径加入 GitHub Actions 的 PATH
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
