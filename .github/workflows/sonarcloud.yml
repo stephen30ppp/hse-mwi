@@ -33,6 +33,7 @@ jobs:
           unzip sonar-scanner.zip
           mv sonar-scanner-4.8.0.2856-linux sonar-scanner
           rm -rf sonar-scanner/jre
+          export PATH="${PWD}/sonar-scanner/bin:${PATH}"
           # 将解压后目录下的 bin 路径加入 GitHub Actions 的 PATH
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
 
