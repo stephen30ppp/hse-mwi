@@ -13,15 +13,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      
-
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v1
+        # 1) 在 env 中设置 SONAR_TOKEN，它会被 GitHub Action 自动读取，
+        #    并传给 SonarScanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
+          # 2) 在 args 中不需要 -Dsonar.login
           args: |
             -Dsonar.projectKey=my-hse-mwi-project
             -Dsonar.organization=my-organization
             -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-            -Dsonar.exclusions=**/*.min.js, **/*.html, dist/**, build/**
+            -Dsonar.exclusions=**/*.min.js,**/*.html,dist/**,build/**
+
 
