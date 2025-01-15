@@ -47,8 +47,8 @@ jobs:
       # 5. Verify Java and SonarScanner installation
       - name: Verify Installation
         run: |
-          source ~/.bashrc
           cat ~/.bashrc
+          pwd
           echo ">>> Checking Java and SonarScanner:"
           which java || true
           java -version || true
@@ -60,7 +60,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          source ~/.bashrc
           echo ">>> Running SonarScanner analysis..."
           sonar-scanner \
             -Dsonar.projectKey=my-hse-mwi-project \
