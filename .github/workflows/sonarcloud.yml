@@ -48,6 +48,7 @@ jobs:
       - name: Verify Installation
         run: |
           source ~/.bashrc
+          cat ~/.bashrc
           echo ">>> Checking Java and SonarScanner:"
           which java || true
           java -version || true
