@@ -35,7 +35,7 @@ jobs:
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
           unzip -q sonar-scanner.zip
           mv sonar-scanner-4.8.0.2856-linux sonar-scanner
-          rm -rf sonar-scanner/jre
+          # rm -rf sonar-scanner/jre
 
           # 将解压后的路径添加到临时 PATH 中
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
