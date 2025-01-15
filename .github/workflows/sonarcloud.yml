@@ -12,70 +12,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 检出代码
+      # 1. Check out the code
       - name: Checkout
         uses: actions/checkout@v3
 
-      # 2. 卸载现有 Java 安装 (如有)
-      - name: Uninstall Existing Java
+      # 2. Uninstall existing Java and install OpenJDK 17
+      - name: Set up JDK 17
         run: |
           sudo apt-get update
-          sudo apt-get remove --purge -y openjdk-* || true
-          sudo apt-get autoremove -y
-
-      # 3. 安装并使用 JDK 17
-      - name: Install JDK 17
-        run: |
-          sudo apt-get update
+          sudo apt-get remove -y openjdk* || true
           sudo apt-get install -y openjdk-17-jdk
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-          echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH=$JAVA_HOME/bin:$PATH
+          echo "export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> ~/.bashrc
+          echo "export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH" >> ~/.bashrc
 
-      # 4. 安装必要工具 (unzip / wget 等)
+      # 3. Install required tools
       - name: Install Required Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip wget bash
+          sudo apt-get install -y unzip wget
 
-      # 5. 下载并解压 SonarScanner CLI (去掉内置 jre)
+      # 4. Download and install SonarScanner
       - name: Install SonarScanner
         run: |
-          # 这里演示以 4.8.0.2856 为例
-          # 若需要更高版本可替换成如 6.2.1 等
           wget -qO sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-
-          # 解压后重命名为 sonar-scanner
           unzip -q sonar-scanner.zip
           mv sonar-scanner-4.8.0.2856-linux sonar-scanner
-
-          # 删除 SonarScanner 自带的 jre 文件夹，强制它使用系统 Java
           rm -rf sonar-scanner/jre
+          export PATH=$PWD/sonar-scanner/bin:$PATH
+          echo "export PATH=$PWD/sonar-scanner/bin:$PATH" >> ~/.bashrc
 
-          # 将解压后的 bin 路径添加到后续步骤的 PATH
-          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
-
-      # 6. 设置 JAVA_HOME (可选，如果 SonarScanner 脚本需要读取 JAVA_HOME)
-      - name: Set Environment Variables
+      # 5. Verify Java and SonarScanner installation
+      - name: Verify Installation
         run: |
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-
-      # 7. 执行 SonarScanner
-      - name: Run SonarScanner
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-        run: |
-          # 验证 Java 和 SonarScanner 安装
-          echo ">>> Checking java and sonar-scanner:"
+          source ~/.bashrc
+          echo ">>> Checking Java and SonarScanner:"
           which java || true
           java -version || true
-
           which sonar-scanner || true
           sonar-scanner -v || true
 
-          # 执行代码扫描
-          echo ">>> Running sonar-scanner analysis..."
+      # 6. Run SonarScanner
+      - name: Run SonarScanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          source ~/.bashrc
+          echo ">>> Running SonarScanner analysis..."
           sonar-scanner \
             -Dsonar.projectKey=my-hse-mwi-project \
             -Dsonar.organization=my-organization \
