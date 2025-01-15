@@ -1,45 +1,20 @@
-name: SonarCloud Scan
-
 on:
   push:
     branches:
       - main
       - develop
       - feature/*
-
 jobs:
   sonarcloud:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the code
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Install Java 17 and SonarScanner using apt
-      - name: Install Java 17 and SonarScanner
+      - name: Set up SonarScanner
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk sonar-scanner
-          echo "JAVA_HOME=$(readlink -f /usr/bin/java | sed 's:/bin/java::')" >> $GITHUB_ENV
-          echo "$JAVA_HOME/bin" >> $GITHUB_PATH
-          echo "/usr/lib/sonar-scanner/bin" >> $GITHUB_PATH
-
-      # 3. Verify Java and SonarScanner installation
-      - name: Verify Installation
-        run: |
-          echo ">>> Checking Java and SonarScanner:"
-          java -version
-          sonar-scanner -v
-
-      # 4. Run SonarScanner
-      - name: Run SonarScanner
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          echo ">>> Running SonarScanner analysis..."
-          sonar-scanner \
-            -Dsonar.projectKey=my-hse-mwi-project \
-            -Dsonar.organization=my-organization \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.exclusions="**/*.min.js,**/*.html,dist/**,build/**"
+          curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner-cli.zip
+          sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
+          export PATH="$PATH:/usr/local/sonar-scanner/bin"
