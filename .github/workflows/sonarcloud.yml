@@ -21,41 +21,43 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          
+
+      # 3. 安装必要工具
       - name: Install Required Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y which bash unzip wget
-          
-      # 3. 下载并解压 SonarScanner CLI
+          sudo apt-get install -y unzip wget bash
+
+      # 4. 下载并解压 SonarScanner CLI
       - name: Install SonarScanner
         run: |
           wget -qO sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          unzip -q sonar-scanner.zip -d /tmp/sonar-scanner
-          mv /tmp/sonar-scanner/sonar-scanner-4.8.0.2856-linux sonar-scanner
-          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_ENV
+          unzip -q sonar-scanner.zip
+          mv sonar-scanner-4.8.0.2856-linux sonar-scanner
+          rm -rf sonar-scanner/jre
 
-      - name: Export Java Environment
+          # 将解压后的路径添加到临时 PATH 中
+          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
+
+      # 5. 设置环境变量
+      - name: Set Environment Variables
         run: |
           echo "JAVA_HOME=/usr/lib/jvm/temurin-17-jdk" >> $GITHUB_ENV
-          echo "${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:$PATH" >> $GITHUB_ENV
 
-      # 4. 执行 SonarScanner
+      # 6. 执行 SonarScanner
       - name: Run SonarScanner
         env:
-         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-         JAVA_HOME: /usr/lib/jvm/temurin-17-jdk
-         PATH: ${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:$PATH
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk
         run: |
-          # 调试信息
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "PATH=$PATH"
-          ls -l $JAVA_HOME/bin
+          # 验证 Java 和 SonarScanner 安装
           which java || true
+          java -version || true
           which sonar-scanner || true
+          sonar-scanner -v || true
 
-          # 执行扫描
+          # 执行代码扫描
           sonar-scanner \
             -Dsonar.projectKey=my-hse-mwi-project \
             -Dsonar.organization=my-organization \
