@@ -38,13 +38,15 @@ jobs:
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
       - name: Export Java Environment
         run: |
-          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk
           echo "JAVA_HOME=/usr/lib/jvm/temurin-17-jdk" >> $GITHUB_ENV
-          echo "${{ github.workspace }}/sonar-scanner/bin:${JAVA_HOME}/bin" >> $GITHUB_PATH
+          echo "/usr/lib/jvm/temurin-17-jdk/bin" >> $GITHUB_PATH
+          echo "PATH=${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:${PATH}" >> $GITHUB_ENV
       # 4. 执行 SonarScanner (真正使用 Java 17)
       - name: Run SonarScanner
         env:
+         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk
+         PATH: ${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:${PATH}
         run: |
           # 查看 SonarScanner 和 Java 版本，确认生效
           which sonar-scanner || true
@@ -57,6 +59,4 @@ jobs:
             -Dsonar.organization=my-organization \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.exclusions="**/*.min.js,**/*.html,dist/**,build/**"
-          env:
-          # 尽量避免将 Token 写在明文里，改用 secrets 传递
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+         
