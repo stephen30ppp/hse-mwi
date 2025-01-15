@@ -31,19 +31,17 @@ jobs:
       # 3. 下载并解压 SonarScanner CLI
       - name: Install SonarScanner
         run: |
-          # 从 SonarSource 下载最新的 CLI 压缩包 (可换成 6.2.1 或其他版本)
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
           wget -qO sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          unzip sonar-scanner.zip $HOME
-          mv sonar-scanner-4.8.0.2856-linux sonar-scanner $HOME/sonar-scanner
-          rm -rf $HOME/sonar-scanner/jre
-          
-          # 将解压后目录下的 bin 路径加入 GitHub Actions 的 PATH
-          echo "$HOME/sonar-scanner/bin" >> $GITHUB_PATH
-          export PATH="$HOME/sonar-scanner/bin:$PATH"
-          chmod +x $HOME/sonar-scanner/bin/sonar-scanner
-          ls -l $HOME/sonar-scanner/bin
-          which sonar-scanner || echo "SonarScanner not found"
+          ls -l sonar-scanner.zip
+          file sonar-scanner.zip
+          unzip -q sonar-scanner.zip -d /tmp/sonar-scanner
+          mv /tmp/sonar-scanner/sonar-scanner-4.8.0.2856-linux sonar-scanner
+          rm -rf sonar-scanner/jre
+          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
+
       - name: Export Java Environment
         run: |
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
