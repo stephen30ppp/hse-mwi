@@ -28,7 +28,7 @@ options(shiny.maxRequestSize = 300 * 1024^2)
 
 # 如果有其他全局变量（例如 show_mitre, data_folder, index_types, territories 等等）也可在此定义
 # 例如：
-show_mitre <<- TRUE  # 假设在 original code 里是从 app_config.R 读取，这里可直接设定或者 source("app_config.R")
+show_mitre <<- TRUE # 假设在 original code 里是从 app_config.R 读取，这里可直接设定或者 source("app_config.R")
 
 data_folder <<- "D:/software/hse-mwi-assignment1_YANGUO-XU/Data"
 

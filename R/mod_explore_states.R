@@ -10,11 +10,10 @@ library(plotly)
 # UI 部分
 mod_explore_states_ui <- function(id) {
   ns <- NS(id)
-  
+
   tabPanel(
     title = div("Explore States", class = "explore"),
     class = "explore-panel",
-    
     sidebarLayout(
       # --- 左侧侧边栏 ---
       sidebarPanel(
@@ -22,7 +21,7 @@ mod_explore_states_ui <- function(id) {
         bsCollapse(
           multiple = TRUE,
           open = c("Exploration Options", "About Selected Measure", "About the Mental Wellness Index"),
-          
+
           # Exploration Options
           bsCollapsePanel(
             "Exploration Options",
@@ -55,7 +54,7 @@ mod_explore_states_ui <- function(id) {
               label = "Reset ZIP Code Focus"
             )
           ),
-          
+
           # Custom MWI Upload
           bsCollapsePanel(
             "Custom MWI Upload",
@@ -70,7 +69,7 @@ mod_explore_states_ui <- function(id) {
               actionButton(ns("custom_data_reset_st"), "Reset")
             )
           ),
-          
+
           # About the Mental Wellness Index
           bsCollapsePanel(
             "About the Mental Wellness Index",
@@ -79,11 +78,11 @@ mod_explore_states_ui <- function(id) {
           )
         )
       ),
-      
+
       # --- 右侧主界面 ---
       mainPanel(
         width = 9,
-        
+
         # 插入地图和右侧内容
         column(
           width = 8,
@@ -94,7 +93,6 @@ mod_explore_states_ui <- function(id) {
             type = 8, color = "#005B94", hide.ui = FALSE
           )
         ),
-        
         column(
           width = 4,
           uiOutput(ns("us_distr_title")),
@@ -105,7 +103,7 @@ mod_explore_states_ui <- function(id) {
           bsCollapse(
             multiple = TRUE,
             open = c("Measure Interpretation", "About Selected Measure"),
-            
+
             # Measure Interpretation
             bsCollapsePanel(
               "Measure Interpretation",
@@ -118,7 +116,7 @@ mod_explore_states_ui <- function(id) {
                 uiOutput(ns("us_info"))
               )
             ),
-            
+
             # About Selected Measure
             bsCollapsePanel(
               "About Selected Measure",
@@ -136,14 +134,14 @@ mod_explore_states_ui <- function(id) {
 mod_explore_states_server <- function(id, ol) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-  #  observe({
-  #    validate(
-  #      need(!is.null(ol$geodat$pop), "Global data 'geodat$pop' is missing")
-  #    )
-  #    ol$geodat$pop <- extract_coordinates(ol$geodat$pop)
-  #    print("Coordinates extracted and added to geodat$pop:")
-  #    print(head(ol$geodat$pop))
-  #  })
+    #  observe({
+    #    validate(
+    #      need(!is.null(ol$geodat$pop), "Global data 'geodat$pop' is missing")
+    #    )
+    #    ol$geodat$pop <- extract_coordinates(ol$geodat$pop)
+    #    print("Coordinates extracted and added to geodat$pop:")
+    #    print(head(ol$geodat$pop))
+    #  })
     # 初始化 reactiveValues
     observe({
       if (is.null(input$st_focus)) {
@@ -159,77 +157,79 @@ mod_explore_states_server <- function(id, ol) {
       longitude = c(-78.6569, -119.4179, -99.9018),
       latitude = c(37.4316, 36.7783, 31.9686)
     )
-    
-    
-     #监听用户选择的州并筛选数据
-  # observeEvent(input$st_focus, {
-  # validate(
-  #  need(!is.null(ol$geodat), "Global data 'geodat' is missing"),
-  #  need("state_name" %in% colnames(ol$geodat), "'state_name' column is missing in 'geodat'"),
-  # need("longitude" %in% colnames(ol$geodat), "'longitude' column is missing in 'geodat'"),
-  #  need("latitude" %in% colnames(ol$geodat), "'latitude' column is missing in 'geodat'")
-  # )
-  # state_selected <- input$st_focus
-  # print(paste("Selected state:", state_selected))
-  # if (is.data.frame(ol$geodat) && "state_name" %in% colnames(ol$geodat)) {
-  # if (state_selected == "All") {
-  #  reactive_data$filtered_geodat <- ol$geodat
-  # } else {
-  #  reactive_data$filtered_geodat <- ol$geodat[ol$geodat$state_name == state_selected, ]
-  # }}
-  # print(paste("Filtered geodat for state:", state_selected))
-  # })
+
+
     # 监听用户选择的州并筛选数据
-   observeEvent(input$st_focus, {
-     state_selected <- input$st_focus
-     print(paste("Selected state:", state_selected))
-     
-     # 检查 ol$geodat 数据结构
-     print("Structure of ol$geodat:")
-     print(str(ol$geodat))
-     
-     # 检查 state_name 列是否存在
-     if (!"state_name" %in% colnames(ol$geodat)) {
-       stop("'state_name' column is missing in 'ol$geodat'")
-     }
-     
-     # 检查 state_name 列的唯一值
-     print("Unique state names in ol$geodat:")
-     print(unique(ol$geodat$state_name))
-     
-     # 数据过滤
-     if (state_selected == "All") {
-       reactive_data$filtered_geodat <- ol$geodat
-     } else {
-       reactive_data$filtered_geodat <- ol$geodat[ol$geodat$state_name == state_selected, ]
-     }
-     
-     # 检查过滤后的数据
-     print("Filtered data:")
-     print(head(reactive_data$filtered_geodat))
-     
-     if (nrow(reactive_data$filtered_geodat) == 0) {
-       print("Filtered data is empty!")
-     }
-   })
-    
-    
+    # observeEvent(input$st_focus, {
+    # validate(
+    #  need(!is.null(ol$geodat), "Global data 'geodat' is missing"),
+    #  need("state_name" %in% colnames(ol$geodat), "'state_name' column is missing in 'geodat'"),
+    # need("longitude" %in% colnames(ol$geodat), "'longitude' column is missing in 'geodat'"),
+    #  need("latitude" %in% colnames(ol$geodat), "'latitude' column is missing in 'geodat'")
+    # )
+    # state_selected <- input$st_focus
+    # print(paste("Selected state:", state_selected))
+    # if (is.data.frame(ol$geodat) && "state_name" %in% colnames(ol$geodat)) {
+    # if (state_selected == "All") {
+    #  reactive_data$filtered_geodat <- ol$geodat
+    # } else {
+    #  reactive_data$filtered_geodat <- ol$geodat[ol$geodat$state_name == state_selected, ]
+    # }}
+    # print(paste("Filtered geodat for state:", state_selected))
+    # })
+    # 监听用户选择的州并筛选数据
+    observeEvent(input$st_focus, {
+      state_selected <- input$st_focus
+      print(paste("Selected state:", state_selected))
+
+      # 检查 ol$geodat 数据结构
+      print("Structure of ol$geodat:")
+      print(str(ol$geodat))
+
+      # 检查 state_name 列是否存在
+      if (!"state_name" %in% colnames(ol$geodat)) {
+        stop("'state_name' column is missing in 'ol$geodat'")
+      }
+
+      # 检查 state_name 列的唯一值
+      print("Unique state names in ol$geodat:")
+      print(unique(ol$geodat$state_name))
+
+      # 数据过滤
+      if (state_selected == "All") {
+        reactive_data$filtered_geodat <- ol$geodat
+      } else {
+        reactive_data$filtered_geodat <- ol$geodat[ol$geodat$state_name == state_selected, ]
+      }
+
+      # 检查过滤后的数据
+      print("Filtered data:")
+      print(head(reactive_data$filtered_geodat))
+
+      if (nrow(reactive_data$filtered_geodat) == 0) {
+        print("Filtered data is empty!")
+      }
+    })
+
+
     # 输出地图
     output$us_map <- renderLeaflet({
       req(reactive_data$filtered_geodat)
       validate(
-        need(!is.null(reactive_data$filtered_geodat)>0, "No data available for map rendering")
+        need(!is.null(reactive_data$filtered_geodat) > 0, "No data available for map rendering")
       )
       print("Rendering map with filtered data:")
       print(head(reactive_data$filtered_geodat))
       leaflet(data = reactive_data$filtered_geodat) %>%
         addTiles() %>%
-        addCircleMarkers(lng = ~longitude,  # 经度列名
-                         lat = ~latitude,   # 纬度列名
-                         label = ~state_name,  # 显示的标签
-                         radius = 5,
-                         color = "blue",
-                         fillOpacity = 0.7)
+        addCircleMarkers(
+          lng = ~longitude, # 经度列名
+          lat = ~latitude, # 纬度列名
+          label = ~state_name, # 显示的标签
+          radius = 5,
+          color = "blue",
+          fillOpacity = 0.7
+        )
     })
 
     # 输出右侧内容: 数据分布标题
@@ -242,7 +242,7 @@ mod_explore_states_server <- function(id, ol) {
     # 输出右侧内容: 数据分布图（示例）
     output$us_distr <- renderPlotly({
       validate(
-        need(!is.null(reactive_data$filtered_geodat)>0, "No data available for plotting")
+        need(!is.null(reactive_data$filtered_geodat) > 0, "No data available for plotting")
       )
       plot_ly(
         data = reactive_data$filtered_geodat,

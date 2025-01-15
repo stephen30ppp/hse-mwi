@@ -6,19 +6,19 @@
 # 如果需要 data_folder, 可在 global.R 或这里定义:
 # data_folder <- "D:/software/hse-mwi-assignment1_YANGUO-XU/Data"
 
-mod_create_own_mwi_ui <- function(id){
+mod_create_own_mwi_ui <- function(id) {
   ns <- NS(id)
-  
+
   # 注意：此处不再使用 navbarMenu(...),
   # 而是返回单个 tabPanel("Create Your Own MWI", ...),
   # 在内部用 tabsetPanel 组织 3 个子页面
   tabPanel(
-    title = "Create Your Own MWI",  # 这是在主 navbarPage 中的标签名
-    
+    title = "Create Your Own MWI", # 这是在主 navbarPage 中的标签名
+
     # 这里用一个 tabsetPanel 来承载之前的 3 个子页面
     tabsetPanel(
-      type = "tabs",  # 或 "pills"
-      
+      type = "tabs", # 或 "pills"
+
       # 1) Adjust MWI Weights and ZIP Codes ----
       tabPanel(
         title = "Adjust MWI Weights and ZIP Codes",
@@ -67,7 +67,7 @@ mod_create_own_mwi_ui <- function(id){
           column(width = 2)
         )
       ),
-      
+
       # 2) Add Local Data to MWI ----
       tabPanel(
         title = "Add Local Data to MWI",
@@ -98,7 +98,7 @@ mod_create_own_mwi_ui <- function(id){
           column(width = 2)
         )
       ),
-      
+
       # 3) Add Local Data to MWI on Your Computer ----
       tabPanel(
         title = "Add Local Data to MWI on Your Computer",
@@ -134,18 +134,18 @@ mod_create_own_mwi_ui <- function(id){
 }
 
 
-mod_create_own_mwi_server <- function(id, ol){
-  moduleServer(id, function(input, output, session){
+mod_create_own_mwi_server <- function(id, ol) {
+  moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # -------------------------------------------
     # 自定义 MWI 相关的 server 逻辑
     # 包含 weight 调整, subset zip codes, pipeline 等
     # -------------------------------------------
-    
+
     # 1) table of custom weights
-    upd_weights <- reactiveVal(sub_m)  # sub_m 来自 global (subset of measure registry)
-    
+    upd_weights <- reactiveVal(sub_m) # sub_m 来自 global (subset of measure registry)
+
     output$custom_mwi_weights <- renderDT({
       datatable(
         upd_weights(),
@@ -153,11 +153,11 @@ mod_create_own_mwi_server <- function(id, ol){
         options = list(pageLength = nrow(upd_weights())),
         editable = list(
           target = "cell",
-          disable = list(columns = c(0:2))  # 允许编辑"Updated Weights"列
+          disable = list(columns = c(0:2)) # 允许编辑"Updated Weights"列
         )
       )
     })
-    
+
     observeEvent(input$custom_mwi_weights_cell_edit, {
       df <- upd_weights()
       row <- input$custom_mwi_weights_cell_edit$row
@@ -165,13 +165,13 @@ mod_create_own_mwi_server <- function(id, ol){
       df[row, col + 1] <- input$custom_mwi_weights_cell_edit$value
       upd_weights(df)
     })
-    
+
     # 2) download metadata
     output$download_metadata <- output$download_metadata_comp <- downloadHandler(
-      filename = function(){
+      filename = function() {
         "Metadata.xlsx"
       },
-      content = function(file){
+      content = function(file) {
         desc <- as.data.frame(
           readxl::read_excel(file.path(data_folder, "Metadata.xlsx"), sheet = 2)
         )
@@ -184,16 +184,16 @@ mod_create_own_mwi_server <- function(id, ol){
         )
       }
     )
-    
+
     # 3) Create custom MWI
     button_click <- reactiveValues(go = 0, weights = 0, comp = 0)
     overall_list <- reactiveVal()
-    
+
     # 如果有 pipeline，可以 source 或在此写:
     observeEvent(c(input$custom_mwi_go, input$custom_mwi_go_comp, input$custom_mwi_go_weights), {
-      press <- if (input$custom_mwi_go[1] > button_click$go){
+      press <- if (input$custom_mwi_go[1] > button_click$go) {
         "go"
-      } else if (input$custom_mwi_go_comp[1] > button_click$comp){
+      } else if (input$custom_mwi_go_comp[1] > button_click$comp) {
         "comp"
       } else {
         "weights"
@@ -201,36 +201,35 @@ mod_create_own_mwi_server <- function(id, ol){
       button_click$go <- input$custom_mwi_go[1]
       button_click$comp <- input$custom_mwi_go_comp[1]
       button_click$weights <- input$custom_mwi_go_weights[1]
-      
+
       withProgress(message = "Creating custom MWI!", detail = "Loading data...", {
         # 如果你有 pipeline_driver.R:
         # source(file.path("Processing_Pipeline", "pipeline_driver.R"))
-        
+
         # 处理文件上传、读取、校验、产生 overall_out
         # ...
-        
+
         # Example:
         # overall_list(overall_out)
-        
+
         output$custom_error <- output$custom_error_comp <- output$custom_error_weights <- renderText({
           "Complete! Click 'Download Custom MWI' to download..."
         })
       })
     })
-    
+
     # 4) download the custom MWI
     output$download_custom_mwi <- output$download_custom_mwi_comp <- output$download_custom_mwi_weights <-
       downloadHandler(
-        filename = function(){
+        filename = function() {
           paste0("Custom_MWI_", Sys.Date(), ".RData")
         },
-        content = function(file){
+        content = function(file) {
           withProgress(message = "Creating Custom MWI file for download...", {
             overall_output <- overall_list()
             save(overall_output, file = file)
           })
         }
       )
-    
   })
 }
