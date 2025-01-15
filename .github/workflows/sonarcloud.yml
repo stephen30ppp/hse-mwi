@@ -21,53 +21,43 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          
       - name: Install Required Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y which bash
+          sudo apt-get install -y which bash unzip wget
           
-     
-
       # 3. 下载并解压 SonarScanner CLI
       - name: Install SonarScanner
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip wget
           wget -qO sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          ls -l sonar-scanner.zip
-          file sonar-scanner.zip
           unzip -q sonar-scanner.zip -d /tmp/sonar-scanner
           mv /tmp/sonar-scanner/sonar-scanner-4.8.0.2856-linux sonar-scanner
-          rm -rf sonar-scanner/jre
-          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_ENV
 
       - name: Export Java Environment
         run: |
-          echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
-         
-      - name: Set Environment Variables
-        run: |
           echo "JAVA_HOME=/usr/lib/jvm/temurin-17-jdk" >> $GITHUB_ENV
-          echo "/usr/lib/jvm/temurin-17-jdk/bin:${PATH}" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:$PATH" >> $GITHUB_ENV
 
-      # 4. 执行 SonarScanner (真正使用 Java 17)
+      # 4. 执行 SonarScanner
       - name: Run SonarScanner
         env:
          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk
-         PATH: ${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:${PATH}
+         PATH: ${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:$PATH
         run: |
-          # 查看 SonarScanner 和 Java 版本，确认生效
+          # 调试信息
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "PATH=$PATH"
+          ls -l $JAVA_HOME/bin
           which java || true
           which sonar-scanner || true
-          sonar-scanner -v || true
-          java -version || true
 
-          # 开始扫描，带上必要的参数
+          # 执行扫描
           sonar-scanner \
             -Dsonar.projectKey=my-hse-mwi-project \
             -Dsonar.organization=my-organization \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.exclusions="**/*.min.js,**/*.html,dist/**,build/**"
-         
