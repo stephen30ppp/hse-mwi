@@ -16,51 +16,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # 2. Uninstall existing Java and install OpenJDK 17
-      - name: Set up JDK 17
+      # 2. Install JDK 17 and SonarScanner via pip
+      - name: Set up Environment and Install SonarScanner
         run: |
+          # Update and install dependencies
           sudo apt-get update
           sudo apt-get remove -y openjdk* || true
-          sudo apt-get install -y openjdk-17-jdk
+          sudo apt-get install -y openjdk-17-jdk python3-pip
+
+          # Set up JAVA_HOME and PATH
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH=$JAVA_HOME/bin:$PATH
-          echo "export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> ~/.bashrc
-          echo "export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH" >> ~/.bashrc
 
-      # 3. Install required tools
-      - name: Install Required Tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip wget
+          # Install sonar-scanner using pip
+          pip install --upgrade pip
+          pip install sonar-scanner-cli
 
-      # 4. Download and install SonarScanner
-      - name: Install SonarScanner
-        run: |
-          wget -qO sonar-scanner.zip \
-            https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          unzip -q sonar-scanner.zip
-          mv sonar-scanner-4.8.0.2856-linux sonar-scanner
-          rm -rf sonar-scanner/jre
-          export PATH=$PWD/sonar-scanner/bin:$PATH
-          echo "export PATH=$PWD/sonar-scanner/bin:$PATH" >> ~/.bashrc
+          # Ensure sonar-scanner is available
+          export PATH=$HOME/.local/bin:$PATH
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 5. Verify Java and SonarScanner installation
-      - name: Verify Installation
-        run: |
-          cat ~/.bashrc
-          pwd
-          echo ">>> Checking Java and SonarScanner:"
-          which java || true
-          java -version || true
-          which sonar-scanner || true
-          sonar-scanner -v || true
+          # Verify installations
+          which java
+          java -version
+          which sonar-scanner
+          sonar-scanner -v
 
-      # 6. Run SonarScanner
+      # 3. Run SonarScanner
       - name: Run SonarScanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          echo ">>> Running SonarScanner analysis..."
           sonar-scanner \
             -Dsonar.projectKey=my-hse-mwi-project \
             -Dsonar.organization=my-organization \
