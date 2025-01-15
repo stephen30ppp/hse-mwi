@@ -21,7 +21,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
+      - name: Install Required Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y which
+          ls -l /bin/sh || sudo ln -sf /bin/bash /bin/sh
      
 
       # 3. 下载并解压 SonarScanner CLI
@@ -36,6 +40,7 @@ jobs:
           
           # 将解压后目录下的 bin 路径加入 GitHub Actions 的 PATH
           echo "${{ github.workspace }}/sonar-scanner/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/sonar-scanner/bin" >> $PATH
       - name: Export Java Environment
         run: |
           echo "JAVA_HOME=/usr/lib/jvm/temurin-17-jdk" >> $GITHUB_ENV
@@ -49,6 +54,7 @@ jobs:
          PATH: ${{ github.workspace }}/sonar-scanner/bin:/usr/lib/jvm/temurin-17-jdk/bin:${PATH}
         run: |
           # 查看 SonarScanner 和 Java 版本，确认生效
+          which java || true
           which sonar-scanner || true
           sonar-scanner -v || true
           java -version || true
