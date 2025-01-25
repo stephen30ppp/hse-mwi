@@ -11,6 +11,7 @@ library(readxl)
 library(writexl)
 library(htmltools)
 library(shiny)
+library(shinyjs)
 library(tigris)
 library(leaflet)
 library(RColorBrewer)
@@ -741,6 +742,25 @@ ui <- fluidPage(
   
   # Title panel sets text in the browser tab
   # This is necessary because the navbarPage title is html and not straight text
+  useShinyjs(),
+
+  tags$script(
+  '
+    // Function to check and set session storage for "seen"
+    Shiny.addCustomMessageHandler("checkSessionStorage", function(message) {
+      console.log("Checking sessionStorage...");
+      if (!sessionStorage.getItem("seen")) {
+        console.log("No seen item in sessionStorage. Showing modal.");
+        Shiny.setInputValue("show_modal", true, {priority: "event"});
+        sessionStorage.setItem("seen", "true"); // Set sessionStorage item
+      } else {
+        console.log("Seen item found in sessionStorage. Modal will not be shown.");
+        Shiny.setInputValue("show_modal", false, {priority: "event"});
+      }
+    });
+    '
+  ),
+
   div(
     titlePanel(
       title = "", 
@@ -1284,6 +1304,9 @@ ui <- fluidPage(
 # SERVER ----
 
 server <- function(input, output, session) {
+  # Send a message to check the cookie when the app starts
+  session$sendCustomMessage("checkSessionStorage", list())
+
   # preallocate custom data ----
   
   # overall list of mwi data
@@ -1339,39 +1362,39 @@ server <- function(input, output, session) {
   )
   
   # create and observe starting modal ----
-  
-  welcome_modal <- modalDialog(
-    title = 
-      HTML("<b><center>Welcome to the Mental Wellness Index™!</b></center>"),
-    size = "l",
-    fluidRow(
-      column(width = 1),
-      column(width = 10,
-             HTML("<p align = 'center'><font size = '3'>"),
-             HTML(
-               "The <b>Mental Wellness Index (MWI)</b> combines 28 factors that influence <b>community-level mental wellness</b> into a single value for <b>each ZIP code</b> in the nation."
-             ),
-             HTML("</p></font>"),
-             HTML("<center>"),
-             img(src = file.path("media", "MWI Framework (Transparent Background).png"), align = "center", width = "60%"),
-             HTML("</center>"),
-             HTML("<br>"),
-             HTML("<center>"),
-             HTML("To learn more and view MWI videos, click <b>MWI Toolkit</b> in the blue bar at the top of the page."),
-            
-             HTML("</center>"),
-             HTML("<center><font size = '2'><i>Notes: This application is best viewed on a tablet or computer in full screen mode. Data updated as of January 2023.</i></font></center>"),
-      )),
-     
-    footer = tagList(
-      HTML("<center>"),
-      modalButton("Start Exploring!"),
-      HTML("</center>")
-    ),
-    easyClose = T # it will just use defaults
-  )
-  
-  showModal(welcome_modal)
+
+  # Show the modal if it has not been seen before
+    observeEvent(input$show_modal, {
+    if (isTRUE(input$show_modal)) {
+      showModal(modalDialog(
+        title = HTML("<b><center>Welcome to the Mental Wellness Index™!</b></center>"),
+        size = "l",
+        fluidRow(
+          column(width = 1),
+          column(
+            width = 10,
+            HTML("<p align = 'center'><font size = '3'>"),
+            HTML("The <b>Mental Wellness Index (MWI)</b> combines 28 factors that influence <b>community-level mental wellness</b> into a single value for <b>each ZIP code</b> in the nation."),
+            HTML("</p></font>"),
+            HTML("<center>"),
+            img(src = file.path("media", "MWI Framework (Transparent Background).png"), align = "center", width = "60%"),
+            HTML("</center>"),
+            HTML("<br>"),
+            HTML("<center>"),
+            HTML("To learn more and view MWI videos, click <b>MWI Toolkit</b> in the blue bar at the top of the page."),
+            HTML("</center>"),
+            HTML("<center><font size = '2'><i>Notes: This application is best viewed on a tablet or computer in full screen mode. Data updated as of January 2023.</i></font></center>")
+          )
+        ),
+        footer = tagList(
+          HTML("<center>"),
+          modalButton("Start Exploring!"),
+          HTML("</center>")
+        ),
+        easyClose = T # it will just use defaults
+      ))
+    }
+  })
   
 
   observeEvent(input$learn_button, {
